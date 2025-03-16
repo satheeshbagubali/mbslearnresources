@@ -1,0 +1,472 @@
+import React, { useState, useEffect } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+
+const HedgeSimulator = () => {
+  // Portfolio and market states
+  const [portfolioValue, setPortfolioValue] = useState(1000000);
+  const [marketPrice, setMarketPrice] = useState(100);
+  const [history, setHistory] = useState([]);
+  const [simulationRunning, setSimulationRunning] = useState(false);
+  const [simulationSpeed, setSimulationSpeed] = useState(1000); // ms between updates
+  const [currentDay, setCurrentDay] = useState(0);
+  const [totalDays, setTotalDays] = useState(252); // Trading days in a year
+  const [marketVolatility, setMarketVolatility] = useState(15); // percentage
+
+  // Hedge parameters
+  const [hedgeEnabled, setHedgeEnabled] = useState(false);
+  const [hedgeRatio, setHedgeRatio] = useState(1.0); // 1.0 = perfectly hedged
+  const [hedgeCost, setHedgeCost] = useState(2); // Annual cost in percentage
+  const [hedgeEffectiveness, setHedgeEffectiveness] = useState(0.8); // How effectively hedge offsets losses (0-1)
+  const [rebalancingFrequency, setRebalancingFrequency] = useState(20); // Days between rebalancing
+  const [lastRebalanceDay, setLastRebalanceDay] = useState(0);
+
+  // Results
+  const [finalPortfolioValue, setFinalPortfolioValue] = useState(null);
+  const [maxDrawdown, setMaxDrawdown] = useState(0);
+  const [volatility, setVolatility] = useState(0);
+  const [sharpeRatio, setSharpeRatio] = useState(0);
+
+  // Reset simulation
+  const resetSimulation = () => {
+    setPortfolioValue(1000000);
+    setMarketPrice(100);
+    setHistory([{
+      day: 0,
+      marketPrice: 100,
+      portfolioValue: 1000000,
+      hedgedPortfolio: 1000000,
+      unhedgedPortfolio: 1000000
+    }]);
+    setCurrentDay(0);
+    setFinalPortfolioValue(null);
+    setMaxDrawdown(0);
+    setVolatility(0);
+    setSharpeRatio(0);
+    setLastRebalanceDay(0);
+  };
+
+  // Start/stop simulation
+  const toggleSimulation = () => {
+    if (simulationRunning) {
+      setSimulationRunning(false);
+    } else {
+      if (currentDay >= totalDays) {
+        resetSimulation();
+      }
+      setSimulationRunning(true);
+    }
+  };
+
+  // Generate a random market move based on volatility
+  const generateMarketMove = () => {
+    // Daily volatility = Annual volatility / sqrt(252)
+    const dailyVol = marketVolatility / Math.sqrt(252);
+    // Random normal ~ N(0, 1)
+    const random = Array.from({length: 12}, () => Math.random() - 0.5).reduce((a, b) => a + b, 0) * 2;
+    // Daily return with slight upward drift (5% annually)
+    return Math.exp((0.05/252 - 0.5 * Math.pow(dailyVol/100, 2)) + (dailyVol/100) * random) - 1;
+  };
+
+  // Simulate a single day
+  const simulateDay = () => {
+    if (currentDay >= totalDays) {
+      setSimulationRunning(false);
+      calculateResults();
+      return;
+    }
+
+    // Market movement
+    const marketMove = generateMarketMove();
+    const newMarketPrice = marketPrice * (1 + marketMove);
+    
+    // Calculate unhedged portfolio value
+    const unhedgedPortfolio = portfolioValue * (1 + marketMove);
+    
+    // Calculate hedged portfolio value
+    let hedgedPortfolio = portfolioValue;
+    if (hedgeEnabled) {
+      // Apply daily cost of the hedge
+      const dailyHedgeCost = Math.pow(1 - hedgeCost/100, 1/252) - 1;
+      hedgedPortfolio = hedgedPortfolio * (1 + dailyHedgeCost);
+      
+      // If market goes down, hedge helps based on effectiveness
+      if (marketMove < 0) {
+        // Loss protection based on hedge ratio and effectiveness
+        const lossProtection = -marketMove * hedgeRatio * hedgeEffectiveness;
+        hedgedPortfolio = hedgedPortfolio * (1 + marketMove + lossProtection);
+      } else {
+        // If market goes up, hedge limits upside based on ratio
+        const upsideCap = hedgeRatio * (1 - hedgeEffectiveness);
+        hedgedPortfolio = hedgedPortfolio * (1 + marketMove * (1 - upsideCap));
+      }
+      
+      // Implement rebalancing
+      if (currentDay - lastRebalanceDay >= rebalancingFrequency) {
+        setLastRebalanceDay(currentDay);
+        // Rebalancing fee (0.1%)
+        hedgedPortfolio = hedgedPortfolio * 0.999;
+      }
+    } else {
+      hedgedPortfolio = unhedgedPortfolio;
+    }
+    
+    // Update state
+    setMarketPrice(newMarketPrice);
+    setPortfolioValue(hedgedPortfolio);
+    
+    // Add to history
+    const newHistory = [...history, {
+      day: currentDay + 1,
+      marketPrice: newMarketPrice,
+      portfolioValue: hedgedPortfolio,
+      hedgedPortfolio: hedgeEnabled ? hedgedPortfolio : null,
+      unhedgedPortfolio: unhedgedPortfolio
+    }];
+    setHistory(newHistory);
+    
+    // Update day counter
+    setCurrentDay(currentDay + 1);
+    
+    // Update metrics as we go
+    updateMetrics(newHistory);
+  };
+
+  const calculateResults = () => {
+    if (history.length < 2) return;
+    
+    // Calculate final value
+    setFinalPortfolioValue(portfolioValue);
+    
+    // Calculate metrics
+    updateMetrics(history);
+  };
+  
+  const updateMetrics = (historyData) => {
+    if (historyData.length < 2) return;
+    
+    // Calculate max drawdown
+    let peak = historyData[0].portfolioValue;
+    let maxDraw = 0;
+    
+    for (let i = 1; i < historyData.length; i++) {
+      const current = historyData[i].portfolioValue;
+      peak = Math.max(peak, current);
+      const drawdown = (peak - current) / peak;
+      maxDraw = Math.max(maxDraw, drawdown);
+    }
+    setMaxDrawdown(maxDraw * 100);
+    
+    // Calculate returns for volatility
+    const returns = [];
+    for (let i = 1; i < historyData.length; i++) {
+      const previousValue = historyData[i-1].portfolioValue;
+      const currentValue = historyData[i].portfolioValue;
+      returns.push((currentValue - previousValue) / previousValue);
+    }
+    
+    // Calculate volatility (standard deviation of returns * sqrt(252))
+    if (returns.length > 0) {
+      const mean = returns.reduce((sum, r) => sum + r, 0) / returns.length;
+      const variance = returns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / returns.length;
+      const annualizedVol = Math.sqrt(variance * 252) * 100;
+      setVolatility(annualizedVol);
+      
+      // Calculate Sharpe Ratio (assuming risk-free rate of 2%)
+      const annualizedReturn = (Math.pow(portfolioValue / 1000000, 252 / historyData.length) - 1) * 100;
+      const excessReturn = annualizedReturn - 2; // Excess over risk-free rate
+      setSharpeRatio(excessReturn / annualizedVol);
+    }
+  };
+
+  // Run simulation step on interval
+  useEffect(() => {
+    if (!simulationRunning) return;
+    
+    const interval = setInterval(() => {
+      simulateDay();
+    }, simulationSpeed);
+    
+    return () => clearInterval(interval);
+  }, [simulationRunning, currentDay, marketPrice, portfolioValue, history, hedgeEnabled, 
+      hedgeRatio, hedgeCost, hedgeEffectiveness, rebalancingFrequency, lastRebalanceDay, simulationSpeed]);
+
+  return (
+    <div className="p-4 max-w-6xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Hedge Effectiveness Simulator</h1>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white p-4 rounded shadow">
+          <h2 className="text-lg font-semibold mb-2">Market Settings</h2>
+          <div className="mb-2">
+            <label className="block text-sm mb-1">Market Volatility (%)</label>
+            <input
+              type="range"
+              min="5"
+              max="40"
+              value={marketVolatility}
+              onChange={(e) => setMarketVolatility(Number(e.target.value))}
+              className="w-full"
+              disabled={simulationRunning}
+            />
+            <div className="flex justify-between text-xs">
+              <span>5%</span>
+              <span>{marketVolatility}%</span>
+              <span>40%</span>
+            </div>
+          </div>
+          
+          <div className="mb-2">
+            <label className="block text-sm mb-1">Simulation Length (Days)</label>
+            <input
+              type="range"
+              min="50"
+              max="504"
+              step="50"
+              value={totalDays}
+              onChange={(e) => setTotalDays(Number(e.target.value))}
+              className="w-full"
+              disabled={simulationRunning}
+            />
+            <div className="flex justify-between text-xs">
+              <span>50 days</span>
+              <span>{totalDays} days</span>
+              <span>2 years</span>
+            </div>
+          </div>
+          
+          <div className="mb-2">
+            <label className="block text-sm mb-1">Simulation Speed</label>
+            <input
+              type="range"
+              min="100"
+              max="2000"
+              step="100"
+              value={simulationSpeed}
+              onChange={(e) => setSimulationSpeed(Number(e.target.value))}
+              className="w-full"
+            />
+            <div className="flex justify-between text-xs">
+              <span>Fast</span>
+              <span>{simulationSpeed}ms</span>
+              <span>Slow</span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white p-4 rounded shadow">
+          <h2 className="text-lg font-semibold mb-2">Hedge Settings</h2>
+          <div className="mb-4">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={hedgeEnabled}
+                onChange={() => setHedgeEnabled(!hedgeEnabled)}
+                disabled={simulationRunning}
+                className="mr-2"
+              />
+              <span>Enable Hedging</span>
+            </label>
+          </div>
+          
+          <div className="mb-2">
+            <label className="block text-sm mb-1">Hedge Ratio ({hedgeRatio.toFixed(2)})</label>
+            <input
+              type="range"
+              min="0"
+              max="1.5"
+              step="0.1"
+              value={hedgeRatio}
+              onChange={(e) => setHedgeRatio(Number(e.target.value))}
+              className="w-full"
+              disabled={!hedgeEnabled || simulationRunning}
+            />
+            <div className="flex justify-between text-xs">
+              <span>0 (None)</span>
+              <span>1.0 (Perfect)</span>
+              <span>1.5 (Over)</span>
+            </div>
+          </div>
+          
+          <div className="mb-2">
+            <label className="block text-sm mb-1">Annual Hedge Cost ({hedgeCost.toFixed(1)}%)</label>
+            <input
+              type="range"
+              min="0"
+              max="10"
+              step="0.1"
+              value={hedgeCost}
+              onChange={(e) => setHedgeCost(Number(e.target.value))}
+              className="w-full"
+              disabled={!hedgeEnabled || simulationRunning}
+            />
+            <div className="flex justify-between text-xs">
+              <span>0%</span>
+              <span>5%</span>
+              <span>10%</span>
+            </div>
+          </div>
+          
+          <div className="mb-2">
+            <label className="block text-sm mb-1">Hedge Effectiveness ({(hedgeEffectiveness * 100).toFixed(0)}%)</label>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={hedgeEffectiveness}
+              onChange={(e) => setHedgeEffectiveness(Number(e.target.value))}
+              className="w-full"
+              disabled={!hedgeEnabled || simulationRunning}
+            />
+            <div className="flex justify-between text-xs">
+              <span>0%</span>
+              <span>50%</span>
+              <span>100%</span>
+            </div>
+          </div>
+          
+          <div className="mb-2">
+            <label className="block text-sm mb-1">Rebalancing Frequency (Every {rebalancingFrequency} Days)</label>
+            <input
+              type="range"
+              min="1"
+              max="63"
+              value={rebalancingFrequency}
+              onChange={(e) => setRebalancingFrequency(Number(e.target.value))}
+              className="w-full"
+              disabled={!hedgeEnabled || simulationRunning}
+            />
+            <div className="flex justify-between text-xs">
+              <span>Daily</span>
+              <span>Monthly</span>
+              <span>Quarterly</span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white p-4 rounded shadow">
+          <h2 className="text-lg font-semibold mb-2">Performance Metrics</h2>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <p className="text-sm font-medium">Current Day:</p>
+              <p className="text-xl">{currentDay} / {totalDays}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium">Market Price:</p>
+              <p className="text-xl">${marketPrice.toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium">Portfolio Value:</p>
+              <p className="text-xl">${(portfolioValue/1000000).toFixed(3)}M</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium">Return:</p>
+              <p className={`text-xl ${((portfolioValue/1000000 - 1) * 100) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {((portfolioValue/1000000 - 1) * 100).toFixed(2)}%
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-medium">Max Drawdown:</p>
+              <p className="text-xl text-red-600">{maxDrawdown.toFixed(2)}%</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium">Volatility:</p>
+              <p className="text-xl">{volatility.toFixed(2)}%</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium">Sharpe Ratio:</p>
+              <p className="text-xl">{sharpeRatio.toFixed(2)}</p>
+            </div>
+          </div>
+          
+          <div className="mt-4">
+            <button
+              onClick={toggleSimulation}
+              className={`w-full py-2 px-4 rounded ${simulationRunning ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}
+            >
+              {simulationRunning ? 'Pause Simulation' : currentDay >= totalDays ? 'Reset & Start' : 'Start Simulation'}
+            </button>
+            {simulationRunning ? null : (
+              <button
+                onClick={resetSimulation}
+                className="w-full mt-2 py-2 px-4 bg-gray-200 rounded"
+                disabled={simulationRunning}
+              >
+                Reset Simulation
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+      
+      <div className="bg-white p-4 rounded shadow mb-6">
+        <h2 className="text-lg font-semibold mb-2">Portfolio Performance</h2>
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={history}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="day" label={{ value: 'Trading Days', position: 'insideBottom', offset: -5 }} />
+              <YAxis 
+                domain={['dataMin - 50000', 'dataMax + 50000']}
+                tickFormatter={(value) => `$${(value/1000000).toFixed(2)}M`}
+                label={{ value: 'Portfolio Value', angle: -90, position: 'insideLeft' }}
+              />
+              <Tooltip 
+                formatter={(value) => [`$${(value/1000000).toFixed(3)}M`, 'Value']}
+                labelFormatter={(value) => `Day ${value}`}
+              />
+              <Legend />
+              <Line 
+                type="monotone" 
+                dataKey="portfolioValue" 
+                stroke="#2563eb" 
+                name="Current Strategy"
+                strokeWidth={2}
+                dot={false}
+              />
+              {hedgeEnabled && (
+                <Line 
+                  type="monotone" 
+                  dataKey="unhedgedPortfolio" 
+                  stroke="#dc2626" 
+                  name="Unhedged Portfolio"
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  dot={false}
+                />
+              )}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      
+      <div className="bg-white p-4 rounded shadow">
+        <h2 className="text-lg font-semibold mb-2">How To Use This Simulator</h2>
+        <div className="text-sm space-y-2">
+          <p>This simulator demonstrates the effects of different hedging strategies on an investment portfolio during market movements.</p>
+          
+          <p><strong>Key Controls:</strong></p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Market Volatility:</strong> Higher volatility means more extreme price movements.</li>
+            <li><strong>Hedge Ratio:</strong> How much of your portfolio is hedged (1.0 = fully hedged).</li>
+            <li><strong>Hedge Cost:</strong> Annual cost of maintaining the hedge as a percentage.</li>
+            <li><strong>Hedge Effectiveness:</strong> How well the hedge performs when the market drops.</li>
+            <li><strong>Rebalancing Frequency:</strong> How often the hedge is adjusted, with a small transaction cost.</li>
+          </ul>
+          
+          <p><strong>Key Metrics:</strong></p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Return:</strong> Total portfolio return.</li>
+            <li><strong>Max Drawdown:</strong> Largest percentage drop from a peak in portfolio value.</li>
+            <li><strong>Volatility:</strong> Standard deviation of returns (annualized).</li>
+            <li><strong>Sharpe Ratio:</strong> Risk-adjusted return (higher is better).</li>
+          </ul>
+          
+          <p>Try different combinations to understand how hedging affects both downside protection and upside potential.</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default HedgeSimulator;
