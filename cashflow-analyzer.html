@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MBS Cashflow Analyzer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.5.0/math.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        .header {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            margin: 0 -10px;
+        }
+        .col {
+            flex: 1;
+            padding: 0 10px;
+            min-width: 300px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+        }
+        .metrics-container {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .metric-card {
+            background-color: white;
+            padding: 15px;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .metric-title {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .metric-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+        .tab.active {
+            border-bottom: 2px solid #4CAF50;
+            font-weight: 500;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: 500;
+        }
+        .scrollable-table {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>MBS Cashflow Analyzer</h1>
+            <p>Analyze and visualize cashflow characteristics of mortgage-backed securities</p>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <h2>MBS Parameters</h2>
+                <div class="form-group">
+                    <label for="principal">Original Principal ($):</label>
+                    <input type="number" id="principal" value="1000000" min="1000" step="1000">
+                </div>
+                <div class="form-group">
+                    <label for="rate">Coupon Rate (%):</label>
+                    <input type="number" id="rate" value="4.5" min="0.1" max="15" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="term">Term (Years):</label>
+                    <input type="number" id="term" value="30" min="1" max="40">
+                </div>
+                <div class="form-group">
+                    <label for="cpr">CPR (Constant Prepayment Rate) (%):</label>
+                    <input type="number" id="cpr" value="6" min="0" max="100" step="0.5">
+                </div>
+                <div class="form-group">
+                    <label for="cdr">CDR (Constant Default Rate) (%):</label>
+                    <input type="number" id="cdr" value="0.5" min="0" max="100" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="severity">Loss Severity (%):</label>
+                    <input type="number" id="severity" value="25" min="0" max="100" step="1">
+                </div>
+                <div class="form-group">
+                    <label for="servicingFee">Servicing Fee (%):</label>
+                    <input type="number" id="servicingFee" value="0.25" min="0" max="2" step="0.05">
+                </div>
+                <div class="form-group">
+                    <label for="yield">Yield Curve Scenario:</label>
+                    <select id="yield">
+                        <option value="flat">Flat</option>
+                        <option value="upward">Upward Sloping</option>
+                        <option value="downward">Downward Sloping</option>
+                        <option value="humped">Humped</option>
+                    </select>
+                </div>
+                <button id="calculateBtn">Calculate Cashflows</button>
+            </div>
+            <div class="col">
+                <h2>Key Metrics</h2>
+                <div class="metrics-container">
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-title">Weighted Average Life (WAL)</div>
+                            <div class="metric-value" id="wal">-</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-title">Duration</div>
+                            <div class="metric-value" id="duration">-</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-title">Convexity</div>
+                            <div class="metric-value" id="convexity">-</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-title">Average Coupon</div>
+                            <div class="metric-value" id="avgCoupon">-</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-title">Present Value (PV)</div>
+                            <div class="metric-value" id="pv">-</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-title">Yield to Maturity</div>
+                            <div class="metric-value" id="ytm">-</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-title">Total Cash Flow</div>
+                            <div class="metric-value" id="totalCashflow">-</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-title">Total Principal</div>
+                            <div class="metric-value" id="totalPrincipal">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="cashflows">Cashflow Analysis</div>
+            <div class="tab" data-tab="sensitivity">Sensitivity Analysis</div>
+            <div class="tab" data-tab="scenario">Scenario Comparison</div>
+        </div>
+
+        <div class="tab-content active" id="cashflows-content">
+            <h2>Cashflow Analysis</h2>
+            <div class="chart-container">
+                <canvas id="cashflowChart"></canvas>
+            </div>
+            <div class="scrollable-table">
+                <table id="cashflowTable">
+                    <thead>
+                        <tr>
+                            <th>Period</th>
+                            <th>Beginning Balance</th>
+                            <th>Scheduled Principal</th>
+                            <th>Prepayment</th>
+                            <th>Default Amount</th>
+                            <th>Interest</th>
+                            <th>Servicing Fee</th>
+                            <th>Net Interest</th>
+                            <th>Total Cashflow</th>
+                            <th>Ending Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="10">Calculate cashflows to see results</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="tab-content" id="sensitivity-content">
+            <h2>Sensitivity Analysis</h2>
+            <div class="row">
+                <div class="col">
+                    <div class="form-group">
+                        <label for="sensitivity-param">Parameter:</label>
+                        <select id="sensitivity-param">
+                            <option value="cpr">CPR</option>
+                            <option value="cdr">CDR</option>
+                            <option value="rate">Coupon Rate</option>
+                            <option value="severity">Loss Severity</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="sensitivity-min">Min Value:</label>
+                        <input type="number" id="sensitivity-min" value="0" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label for="sensitivity-max">Max Value:</label>
+                        <input type="number" id="sensitivity-max" value="10" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label for="sensitivity-step">Step Size:</label>
+                        <input type="number" id="sensitivity-step" value="1" step="0.5">
+                    </div>
+                    <button id="runSensitivityBtn">Run Sensitivity Analysis</button>
+                </div>
+                <div class="col">
+                    <div class="chart-container">
+                        <canvas id="sensitivityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="scenario-content">
+            <h2>Scenario Comparison</h2>
+            <div class="row">
+                <div class="col">
+                    <h3>Scenario Definition</h3>
+                    <div class="form-group">
+                        <label for="scenario-name">Scenario Name:</label>
+                        <input type="text" id="scenario-name" value="Base Case">
+                    </div>
+                    <div class="form-group">
+                        <label for="scenario-cpr">CPR (%):</label>
+                        <input type="number" id="scenario-cpr" value="6" min="0" max="100" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label for="scenario-cdr">CDR (%):</label>
+                        <input type="number" id="scenario-cdr" value="0.5" min="0" max="100" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label for="scenario-severity">Loss Severity (%):</label>
+                        <input type="number" id="scenario-severity" value="25" min="0" max="100" step="1">
+                    </div>
+                    <button id="addScenarioBtn">Add Scenario</button>
+                </div>
+                <div class="col">
+                    <h3>Scenario Comparison</h3>
+                    <div class="chart-container">
+                        <canvas id="scenarioChart"></canvas>
+                    </div>
+                    <div class="scrollable-table">
+                        <table id="scenarioTable">
+                            <thead>
+                                <tr>
+                                    <th>Scenario</th>
+                                    <th>WAL</th>
+                                    <th>Duration</th>
+                                    <th>PV</th>
+                                    <th>YTM</th>
+                                    <th>Total Cashflow</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="6">Add scenarios to compare</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let cashflowChart, sensitivityChart, scenarioChart;
+        let scenarios = [];
+
+        // Utility functions
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+        }
+
+        function formatPercent(value) {
+            return new Intl.NumberFormat('en-US', { style: 'percent', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value / 100);
+        }
+
+        function formatNumber(value, decimals = 2) {
+            return new Intl.NumberFormat('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(value);
+        }
+
+        // MBS calculation functions
+        function calculateMonthlyCouponPayment(principal, rate, term) {
+            const monthlyRate = rate / 100 / 12;
+            const months = term * 12;
+            return principal * monthlyRate * Math.pow(1 + monthlyRate, months) / (Math.pow(1 + monthlyRate, months) - 1);
+        }
+
+        function calculateCashflows(params) {
+            const principal = parseFloat(params.principal);
+            const annualRate = parseFloat(params.rate);
+            const term = parseInt(params.term);
+            const cpr = parseFloat(params.cpr);
+            const cdr = parseFloat(params.cdr);
+            const severity = parseFloat(params.severity) / 100;
+            const servicingFee = parseFloat(params.servicingFee) / 100;
+            
+            // Convert annual rates to monthly
+            const monthlyRate = annualRate / 100 / 12;
+            const monthlyCPR = 1 - Math.pow(1 - cpr / 100, 1/12);
+            const monthlyCDR = 1 - Math.pow(1 - cdr / 100, 1/12);
+            
+            // Calculate monthly payment
+            const months = term * 12;
+            const monthlyPayment = calculateMonthlyCouponPayment(principal, annualRate, term);
+            
+            // Initialize variables for cashflow calculation
+            let remainingBalance = principal;
+            let period = 0;
+            const cashflows = [];
+            
+            // Get yield curve for present value calculations
+            const yieldCurve = getYieldCurve(params.yield, annualRate);
+            
+            while (remainingBalance > 1000 && period < months) {
+                const monthlyInterest = remainingBalance * monthlyRate;
+                const scheduledPrincipal = Math.min(monthlyPayment - monthlyInterest, remainingBalance);
+                
+                // Calculate prepayment for this period
+                const balanceAfterScheduled = remainingBalance - scheduledPrincipal;
+                const prepayment = balanceAfterScheduled * monthlyCPR;
+                
+                // Calculate defaults for this period (CDR applies to balance after scheduled payment)
+                const defaultAmount = balanceAfterScheduled * monthlyCDR;
+                const lossAmount = defaultAmount * severity;
+                const recoveryAmount = defaultAmount - lossAmount;
+                
+                // Calculate total principal reduction
+                const totalPrincipal = scheduledPrincipal + prepayment + defaultAmount;
+                
+                // Calculate servicing fee
+                const servicingAmount = remainingBalance * (servicingFee / 12);
+                
+                // Calculate net interest (gross interest minus servicing fee)
+                const netInterest = monthlyInterest - servicingAmount;
+                
+                // Calculate total cashflow for this period
+                const totalCashflow = scheduledPrincipal + prepayment + recoveryAmount + netInterest;
+                
+                // Calculate ending balance
+                const endingBalance = remainingBalance - totalPrincipal;
+                
+                // Store cashflow data for this period
+                cashflows.push({
+                    period: period + 1,
+                    beginningBalance: remainingBalance,
+                    scheduledPrincipal: scheduledPrincipal,
+                    prepayment: prepayment,
+                    defaultAmount: defaultAmount,
+                    lossAmount: lossAmount,
+                    recoveryAmount: recoveryAmount,
+                    interest: monthlyInterest,
+                    servicingFee: servicingAmount,
+                    netInterest: netInterest,
+                    totalCashflow: totalCashflow,
+                    endingBalance: endingBalance,
+                    // Store discount factors and present values for metrics calculations
+                    discountFactor: calculateDiscountFactor(period, yieldCurve),
+                    presentValue: 0 // Will be calculated after
+                });
+                
+                // Update remaining balance for next iteration
+                remainingBalance = endingBalance;
+                period++;
+            }
+            
+            // Calculate present values and other metrics
+            let totalPV = 0;
+            let totalCF = 0;
+            let weightedTime = 0;
+            
+            cashflows.forEach((cf, i) => {
+                const discountFactor = cf.discountFactor;
+                cf.presentValue = cf.totalCashflow * discountFactor;
+                totalPV += cf.presentValue;
+                totalCF += cf.totalCashflow;
+                
+                // For WAL calculation
+                const timeWeight = (i + 1) / 12; // Convert to years
+                weightedTime += timeWeight * (cf.scheduledPrincipal + cf.prepayment + cf.recoveryAmount) * discountFactor;
+            });
+            
+            // Calculate key metrics
+            const metrics = calculateMetrics(cashflows, principal, totalPV);
+            
+            return {
+                cashflows: cashflows,
+                metrics: metrics
+            };
+        }
+
+        function getYieldCurve(scenario, baseRate) {
+            // Return yield rates for different time points based on scenario
+            const rates = [];
+            const baseRateDecimal = baseRate / 100;
+            
+            switch(scenario) {
+                case 'flat':
+                    // Flat yield curve - same rate for all periods
+                    for (let year = 0; year <= 30; year++) {
+                        rates.push({
+                            year: year,
+                            rate: baseRateDecimal
+                        });
+                    }
+                    break;
+                case 'upward':
+                    // Upward sloping yield curve
+                    for (let year = 0; year <= 30; year++) {
+                        rates.push({
+                            year: year,
+                            rate: baseRateDecimal + (year * 0.001) // Slight upward slope
+                        });
+                    }
+                    break;
+                case 'downward':
+                    // Downward sloping yield curve
+                    for (let year = 0; year <= 30; year++) {
+                        rates.push({
+                            year: year,
+                            rate: Math.max(0.005, baseRateDecimal - (year * 0.001)) // Slight downward slope with min
+                        });
+                    }
+                    break;
+                case 'humped':
+                    // Humped yield curve (rises then falls)
+                    for (let year = 0; year <= 30; year++) {
+                        const adjustment = year < 10 ? (year * 0.001) : ((20 - year) * 0.001);
+                        rates.push({
+                            year: year,
+                            rate: baseRateDecimal + adjustment
+                        });
+                    }
+                    break;
+            }
+            
+            return rates;
+        }
+
+        function calculateDiscountFactor(period, yieldCurve) {
+            // Convert period (months) to years for yield curve lookup
+            const year = period / 12;
+            
+            // Find applicable rate from yield curve
+            let rate;
+            if (year <= 0) {
+                rate = yieldCurve[0].rate;
+            } else if (year >= 30) {
+                rate = yieldCurve[30].rate;
+            } else {
+                // Interpolate between available points
+                const lowerYearIndex = Math.floor(year);
+                const upperYearIndex = Math.ceil(year);
+                const lowerRate = yieldCurve[lowerYearIndex].rate;
+                const upperRate = yieldCurve[upperYearIndex].rate;
+                
+                const fraction = year - lowerYearIndex;
+                rate = lowerRate + (upperRate - lowerRate) * fraction;
+            }
+            
+            // Calculate monthly discount rate
+            const monthlyRate = rate / 12;
+            
+            // Calculate discount factor: 1 / (1 + r)^t
+            return 1 / Math.pow(1 + monthlyRate, period);
+        }
+
+        function calculateMetrics(cashflows, principal, totalPV) {
+            // Calculate WAL (Weighted Average Life)
+            let totalPrincipal = 0;
+            let weightedPrincipal = 0;
+            
+            cashflows.forEach((cf, i) => {
+                const timeInYears = (i + 1) / 12;
+                const principalPayment = cf.scheduledPrincipal + cf.prepayment + cf.recoveryAmount;
+                
+                totalPrincipal += principalPayment;
+                weightedPrincipal += principalPayment * timeInYears;
+            });
+            
+            const wal = weightedPrincipal / totalPrincipal;
+            
+            // Calculate Duration (Macaulay Duration)
+            let durationNumerator = 0;
+            
+            cashflows.forEach((cf, i) => {
+                const timeInYears = (i + 1) / 12;
+                durationNumerator += timeInYears * cf.presentValue;
+            });
+            
+            const duration = durationNumerator / totalPV;
+            
+            // Calculate Convexity
+            let convexityNumerator = 0;
+            
+            cashflows.forEach((cf, i) => {
+                const timeInYears = (i + 1) / 12;
+                convexityNumerator += (timeInYears * timeInYears + timeInYears) * cf.presentValue;
+            });
+            
+            const convexity = convexityNumerator / totalPV;
+            
+            // Calculate average coupon
+            let totalInterest = 0;
+            cashflows.forEach(cf => {
+                totalInterest += cf.interest;
+            });
+            
+            const avgCoupon = (totalInterest / principal) * 12 * 100; // Annualized percentage
+            
+            // Calculate total cashflow
+            let totalCashflow = 0;
+            cashflows.forEach(cf => {
+                totalCashflow += cf.totalCashflow;
+            });
+            
+            // Calculate yield to maturity (approximation using IRR algorithm)
+            const ytm = calculateYTM(cashflows, principal) * 100;
+            
+            return {
+                wal: wal,
+                duration: duration,
+                convexity: convexity,
+                avgCoupon: avgCoupon,
+                pv: totalPV,
+                ytm: ytm,
+                totalCashflow: totalCashflow,
+                totalPrincipal: totalPrincipal
+            };
+        }
+
+        function calculateYTM(cashflows, principal) {
+            // Simple implementation of IRR calculation using Newton-Raphson method
+            const guess = 0.05 / 12; // Initial guess of 5% annual rate (as monthly rate)
+            const tolerance = 0.0000001;
+            const maxIterations = 100;
+            
+            let rate = guess;
+            
+            // Create array of cashflows starting with initial investment (negative)
+            const cfArray = [-principal];
+            cashflows.forEach(cf => {
+                cfArray.push(cf.totalCashflow);
+            });
+            
+            // Newton-Raphson iterations
+            for (let i = 0; i < maxIterations; i++) {
+                let npv = 0;
+                let derivativeNpv = 0;
+                
+                for (let j = 0; j < cfArray.length; j++) {
+                    const factor = Math.pow(1 + rate, j);
+                    npv += cfArray[j] / factor;
+                    if (j > 0) {
+                        derivativeNpv -= j * cfArray[j] / Math.pow(1 + rate, j + 1);
+                    }
+                }
+                
+                if (Math.abs(npv) < tolerance) {
+                    break;
+                }
+                
+                // Update rate
+                rate = rate - npv / derivativeNpv;
+                
+                if (rate < 0) {
+                    // If we get a negative rate, return a small positive number
+                    rate = 0.0001;
+                    break;
+                }
+            }
+            
+            // Convert monthly rate to annual rate
+            return Math.pow(1 + rate, 12) - 1;
+        }
+
+        // UI function to display cashflow results
+        function displayResults(results) {
+            const cashflows = results.cashflows;
+            const metrics = results.metrics;
+            
+            // Update metrics display
+            document.getElementById('wal').textContent = formatNumber(metrics.wal, 2) + ' years';
+            document.getElementById('duration').textContent = formatNumber(metrics.duration, 2) + ' years';
+            document.getElementById('convexity').textContent = formatNumber(metrics.convexity, 2);
+            document.getElementById('avgCoupon').textContent = formatPercent(metrics.avgCoupon);
+            document.getElementById('pv').textContent = formatCurrency(metrics.pv);
+            document.getElementById('ytm').textContent = formatPercent(metrics.ytm);
+            document.getElementById('totalCashflow').textContent = formatCurrency(metrics.totalCashflow);
+            document.getElementById('totalPrincipal').textContent = formatCurrency(metrics.totalPrincipal);
+            
+            // Update cashflow table
+            const tableBody = document.getElementById('cashflowTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
+            
+            cashflows.forEach(cf => {
+                const row = tableBody.insertRow();
+                row.insertCell(0).textContent = cf.period;
+                row.insertCell(1).textContent = formatCurrency(cf.beginningBalance);
+                row.insertCell(2).textContent = formatCurrency(cf.scheduledPrincipal);
+                row.insertCell(3).textContent = formatCurrency(cf.prepayment);
+                row.insertCell(4).textContent = formatCurrency(cf.defaultAmount);
+                row.insertCell(5).textContent = formatCurrency(cf.interest);
+                row.insertCell(6).textContent = formatCurrency(cf.servicingFee);
+                row.insertCell(7).textContent = formatCurrency(cf.netInterest);
+                row.insertCell(8).textContent = formatCurrency(cf.totalCashflow);
+                row.insertCell(9).textContent = formatCurrency(cf.endingBalance);
+            });
+            
+            // Update cashflow chart
+            updateCashflowChart(cashflows);
+        }
+
+        // Function to initialize and update the cashflow chart
+        function updateCashflowChart(cashflows) {
+            // Prepare data for the chart
+            const periods = cashflows.map(cf => cf.period);
+            const scheduledPrincipal = cashflows.map(cf => cf.scheduledPrincipal);
+            const prepayments = cashflows.map(cf => cf.prepayment);
+            const recoveries = cashflows.map(cf => cf.recoveryAmount);
+            const netInterest = cashflows.map(cf => cf.netInterest);
+            
+            // If chart exists, destroy it first
+            if (cashflowChart) {
+                cashflowChart.destroy();
+            }
+            
+            // Create new chart
+            const ctx = document.getElementById('cashflowChart').getContext('2d');
+            cashflowChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: periods,
+                    datasets: [
+                        {
+                            label: 'Scheduled Principal',
+                            data: scheduledPrincipal,
+                            backgroundColor: 'rgba(255, 159, 64, 0.7)',
+                            stack: 'stack0'
+                        },
+                        {
+                            label: 'Prepayments',
+                            data: prepayments,
+                            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                            stack: 'stack0'
+                        },
+                        {
+                            label: 'Recoveries',
+                            data: recoveries,
+                            backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                            stack: 'stack0'
+                        },
+                        {
+                            label: 'Net Interest',
+                            data: netInterest,
+                            backgroundColor: 'rgba(153, 102, 255, 0.7)',
+                            stack: 'stack0'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'MBS Cashflow Components by Period'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += formatCurrency(context.raw);
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Period (Month)'
+                            },
+                            stacked: true
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Amount ($)'
+                            },
+                            stacked: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value).replace('.00', '');
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Function to run sensitivity analysis
+        function runSensitivityAnalysis() {
+            const paramType = document.getElementById('sensitivity-param').value;
+            const min = parseFloat(document.getElementById('sensitivity-min').value);
+            const max = parseFloat(document.getElementById('sensitivity-max').value);
+            const step = parseFloat(document.getElementById('sensitivity-step').value);
+            
+            // Get current base parameters
+            const baseParams = {
+                principal: document.getElementById('principal').value,
+                rate: document.getElementById('rate').value,
+                term: document.getElementById('term').value,
+                cpr: document.getElementById('cpr').value,
+                cdr: document.getElementById('cdr').value,
+                severity: document.getElementById('severity').value,
+                servicingFee: document.getElementById('servicingFee').value,
+                yield: document.getElementById('yield').value
+            };
+            
+            // Create arrays for sensitivity values and results
+            const paramValues = [];
+            const walValues = [];
+            const durationValues = [];
+            const pvValues = [];
+            
+            // Calculate for each parameter value
+            for (let paramValue = min; paramValue <= max; paramValue += step) {
+                paramValues.push(paramValue);
+                
+                // Create a copy of base parameters and modify the sensitivity parameter
+                const params = {...baseParams};
+                params[paramType] = paramValue;
+                
+                // Calculate with new parameter
+                const results = calculateCashflows(params);
+                const metrics = results.metrics;
+                
+                // Store results
+                walValues.push(metrics.wal);
+                durationValues.push(metrics.duration);
+                pvValues.push(metrics.pv);
+            }
+            
+            // Update sensitivity chart
+            updateSensitivityChart(paramType, paramValues, walValues, durationValues, pvValues);
+        }
+
+        // Function to update sensitivity chart
+        function updateSensitivityChart(paramType, paramValues, walValues, durationValues, pvValues) {
+            // Get parameter display name
+            let paramName;
+            switch(paramType) {
+                case 'cpr': paramName = 'CPR (%)'; break;
+                case 'cdr': paramName = 'CDR (%)'; break;
+                case 'rate': paramName = 'Coupon Rate (%)'; break;
+                case 'severity': paramName = 'Loss Severity (%)'; break;
+                default: paramName = 'Parameter Value';
+            }
+            
+            // If chart exists, destroy it first
+            if (sensitivityChart) {
+                sensitivityChart.destroy();
+            }
+            
+            // Normalize PV values for the secondary y-axis
+            const maxPV = Math.max(...pvValues);
+            const normalizedPV = pvValues.map(pv => (pv / maxPV) * Math.max(...walValues) * 1.5);
+            
+            // Create new chart
+            const ctx = document.getElementById('sensitivityChart').getContext('2d');
+            sensitivityChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: paramValues,
+                    datasets: [
+                        {
+                            label: 'WAL (years)',
+                            data: walValues,
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                            tension: 0.1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Duration (years)',
+                            data: durationValues,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            tension: 0.1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Present Value ($)',
+                            data: normalizedPV,
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            tension: 0.1,
+                            yAxisID: 'y',
+                            hidden: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `Sensitivity Analysis: Impact of ${paramName} on Key Metrics`
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    
+                                    if (context.dataset.label === 'Present Value ($)') {
+                                        const actualValue = pvValues[context.dataIndex];
+                                        label += formatCurrency(actualValue);
+                                    } else {
+                                        label += formatNumber(context.raw, 2);
+                                    }
+                                    
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: paramName
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Years'
+                            },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Function to add a scenario for comparison
+        function addScenario() {
+            const scenarioName = document.getElementById('scenario-name').value;
+            const cpr = parseFloat(document.getElementById('scenario-cpr').value);
+            const cdr = parseFloat(document.getElementById('scenario-cdr').value);
+            const severity = parseFloat(document.getElementById('scenario-severity').value);
+            
+            // Get base parameters
+            const baseParams = {
+                principal: document.getElementById('principal').value,
+                rate: document.getElementById('rate').value,
+                term: document.getElementById('term').value,
+                cpr: cpr,
+                cdr: cdr,
+                severity: severity,
+                servicingFee: document.getElementById('servicingFee').value,
+                yield: document.getElementById('yield').value
+            };
+            
+            // Calculate cashflows for this scenario
+            const results = calculateCashflows(baseParams);
+            const metrics = results.metrics;
+            
+            // Add scenario to array
+            scenarios.push({
+                name: scenarioName,
+                params: baseParams,
+                metrics: metrics,
+                cashflows: results.cashflows
+            });
+            
+            // Update scenario table and chart
+            updateScenarioComparison();
+        }
+
+        // Function to update scenario comparison table and chart
+        function updateScenarioComparison() {
+            if (scenarios.length === 0) return;
+            
+            // Update scenario table
+            const tableBody = document.getElementById('scenarioTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
+            
+            scenarios.forEach(scenario => {
+                const row = tableBody.insertRow();
+                row.insertCell(0).textContent = scenario.name;
+                row.insertCell(1).textContent = formatNumber(scenario.metrics.wal, 2);
+                row.insertCell(2).textContent = formatNumber(scenario.metrics.duration, 2);
+                row.insertCell(3).textContent = formatCurrency(scenario.metrics.pv);
+                row.insertCell(4).textContent = formatPercent(scenario.metrics.ytm);
+                row.insertCell(5).textContent = formatCurrency(scenario.metrics.totalCashflow);
+            });
+            
+            // Update scenario chart
+            updateScenarioChart();
+        }
+
+        // Function to update scenario chart
+        function updateScenarioChart() {
+            // Prepare data for the chart
+            const scenarioNames = scenarios.map(s => s.name);
+            const colors = [
+                'rgba(54, 162, 235, 0.7)',
+                'rgba(75, 192, 192, 0.7)',
+                'rgba(255, 99, 132, 0.7)',
+                'rgba(255, 159, 64, 0.7)',
+                'rgba(153, 102, 255, 0.7)'
+            ];
+            
+            // Create datasets for each scenario
+            const datasets = [];
+            
+            scenarios.forEach((scenario, index) => {
+                // Extract total cashflow by period
+                const cashflows = scenario.cashflows;
+                const data = cashflows.map(cf => cf.totalCashflow);
+                
+                // Create dataset
+                datasets.push({
+                    label: scenario.name,
+                    data: data,
+                    borderColor: colors[index % colors.length].replace('0.7', '1'),
+                    backgroundColor: colors[index % colors.length],
+                    tension: 0.1
+                });
+            });
+            
+            // If chart exists, destroy it first
+            if (scenarioChart) {
+                scenarioChart.destroy();
+            }
+            
+            // Create periods array for x-axis
+            const periods = [];
+            if (scenarios.length > 0) {
+                for (let i = 1; i <= scenarios[0].cashflows.length; i++) {
+                    periods.push(i);
+                }
+            }
+            
+            // Create new chart
+            const ctx = document.getElementById('scenarioChart').getContext('2d');
+            scenarioChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: periods,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Scenario Comparison: Total Cashflow by Period'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += formatCurrency(context.raw);
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Period (Month)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Total Cashflow ($)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value).replace('.00', '');
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Event handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle calculate button click
+            document.getElementById('calculateBtn').addEventListener('click', function() {
+                const params = {
+                    principal: document.getElementById('principal').value,
+                    rate: document.getElementById('rate').value,
+                    term: document.getElementById('term').value,
+                    cpr: document.getElementById('cpr').value,
+                    cdr: document.getElementById('cdr').value,
+                    severity: document.getElementById('severity').value,
+                    servicingFee: document.getElementById('servicingFee').value,
+                    yield: document.getElementById('yield').value
+                };
+                
+                const results = calculateCashflows(params);
+                displayResults(results);
+            });
+            
+            // Handle tab switching
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // Remove active class from all tabs and tab contents
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    // Add active class to clicked tab and corresponding content
+                    this.classList.add('active');
+                    const tabId = this.getAttribute('data-tab');
+                    document.getElementById(`${tabId}-content`).classList.add('active');
+                });
+            });
+            
+            // Handle sensitivity analysis button
+            document.getElementById('runSensitivityBtn').addEventListener('click', function() {
+                runSensitivityAnalysis();
+            });
+            
+            // Handle add scenario button
+            document.getElementById('addScenarioBtn').addEventListener('click', function() {
+                addScenario();
+            });
+            
+            // Initialize with default values
+            document.getElementById('calculateBtn').click();
+            
+            // Set default values for sensitivity analysis based on selected parameter
+            document.getElementById('sensitivity-param').addEventListener('change', function() {
+                const param = this.value;
+                let min, max, step;
+                
+                switch(param) {
+                    case 'cpr':
+                        min = 0;
+                        max = 20;
+                        step = 2;
+                        break;
+                    case 'cdr':
+                        min = 0;
+                        max = 5;
+                        step = 0.5;
+                        break;
+                    case 'rate':
+                        min = 2;
+                        max = 8;
+                        step = 0.5;
+                        break;
+                    case 'severity':
+                        min = 0;
+                        max = 50;
+                        step = 5;
+                        break;
+                }
+                
+                document.getElementById('sensitivity-min').value = min;
+                document.getElementById('sensitivity-max').value = max;
+                document.getElementById('sensitivity-step').value = step;
+            });
+            
+            // Trigger change event to set initial values
+            document.getElementById('sensitivity-param').dispatchEvent(new Event('change'));
+        });
+    </script>
+</body>
+</html>
