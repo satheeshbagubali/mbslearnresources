@@ -1,0 +1,2539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MBS Structuring Game</title>
+    <!-- Add the openTab function in the head so it's available before the HTML loads -->
+    <script>
+        // Define openTab function globally
+        function openTab(evt, tabName) {
+            // Hide all tab content
+            const tabContents = document.getElementsByClassName("tab-content");
+            for (let i = 0; i < tabContents.length; i++) {
+                tabContents[i].style.display = "none";
+            }
+            
+            // Remove 'active' class from all tab buttons
+            const tabButtons = document.getElementsByClassName("tab-button");
+            for (let i = 0; i < tabButtons.length; i++) {
+                tabButtons[i].className = tabButtons[i].className.replace(" active", "");
+            }
+            
+            // Show the current tab and add 'active' class to the button
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+        
+        // Initialize selectedMortgages as a global variable before DOM loads
+        window.selectedMortgages = new Set();
+
+
+
+
+
+
+        
+    </script>
+    <!-- Include Chart.js from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .panel {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .left-panel {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .right-panel {
+            flex: 2;
+            min-width: 400px;
+        }
+        
+        .mortgage-pool {
+            margin-bottom: 30px;
+        }
+        
+        .mortgage-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        
+        .mortgage {
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .mortgage:hover {
+            background-color: #eef6ff;
+        }
+        
+        .selected {
+            background-color: #e3f2fd;
+            border-color: #2196F3;
+        }
+        
+        .tranche-container {
+            margin-bottom: 20px;
+        }
+        
+        .tranche {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            background-color: white;
+        }
+        
+        .tranche h3 {
+            margin-top: 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .senior {
+            border-left: 5px solid #4CAF50;
+        }
+        
+        .mezzanine {
+            border-left: 5px solid #FF9800;
+        }
+        
+        .junior {
+            border-left: 5px solid #F44336;
+        }
+        
+        .button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        
+        .button:hover {
+            background-color: #45a049;
+        }
+        
+        .button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .button-red {
+            background-color: #f44336;
+        }
+        
+        .button-red:hover {
+            background-color: #d32f2f;
+        }
+        
+        .button-blue {
+            background-color: #2196F3;
+        }
+        
+        .button-blue:hover {
+            background-color: #1976D2;
+        }
+        
+        input[type="number"], input[type="text"], select {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0 15px;
+            display: inline-block;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .rating {
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.8em;
+        }
+        
+        .aaa {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .aa {
+            background-color: #8BC34A;
+            color: white;
+        }
+        
+        .a {
+            background-color: #CDDC39;
+        }
+        
+        .bbb {
+            background-color: #FFC107;
+        }
+        
+        .bb {
+            background-color: #FF9800;
+            color: white;
+        }
+        
+        .b {
+            background-color: #FF5722;
+            color: white;
+        }
+        
+        .ccc {
+            background-color: #F44336;
+            color: white;
+        }
+        
+        .progress-container {
+            margin-top: 20px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            margin-bottom: 5px;
+        }
+        
+        .progress {
+            height: 100%;
+            border-radius: 10px;
+            background-color: #4CAF50;
+            transition: width 0.5s;
+            text-align: center;
+            color: white;
+            font-size: 12px;
+            line-height: 20px;
+        }
+        
+        .simulation-results {
+            margin-top: 20px;
+        }
+        
+        .market-conditions {
+            margin-top: 20px;
+        }
+        
+        .chart-container {
+            width: 100%;
+            height: 400px;
+            margin-top: 20px;
+            position: relative;
+        }
+        
+        .scenario-selector {
+            margin-bottom: 15px;
+        }
+        
+        .tabs {
+            overflow: hidden;
+            border: 1px solid #ccc;
+            background-color: #f1f1f1;
+            border-radius: 4px 4px 0 0;
+        }
+        
+        .tab-button {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: 0.3s;
+            font-size: 16px;
+        }
+        
+        .tab-button:hover {
+            background-color: #ddd;
+        }
+        
+        .tab-button.active {
+            background-color: #2196F3;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            background-color: white;
+        }
+        
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            border-bottom: 1px dotted black;
+            cursor: help;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 300px;
+            background-color: #555;
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -150px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #555 transparent transparent transparent;
+        }
+        
+        .banner {
+            background-color: #1976D2;
+            color: white;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .total-return-panel {
+            background-color: #e8f5e9;
+            border: 1px solid #81c784;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .total-return-formula {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            margin: 10px 0;
+        }
+
+        .comparison-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+
+        .comparison-box {
+            flex: 1;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 0 5px;
+        }
+
+        .expected-return {
+            background-color: #e3f2fd;
+            border: 1px solid #90caf9;
+        }
+
+        .actual-return {
+            background-color: #fff3e0;
+            border: 1px solid #ffcc80;
+        }
+
+        .return-difference {
+            background-color: #f1f8e9;
+            border: 1px solid #aed581;
+        }
+        
+        /* Cash flow visualization styles */
+        .cash-flow-panel {
+            background-color: #e8f5e9;
+            border: 1px solid #81c784;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .cash-flow-controls {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 15px;
+            font-size: 14px;
+        }
+        
+        .legend-color {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            margin-right: 5px;
+            border-radius: 3px;
+        }
+        
+        /* LTV Risk Analyzer styles */
+        .ltv-panel {
+            background-color: #e3f2fd;
+            border: 1px solid #90caf9;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .ltv-controls {
+            margin-bottom: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .range-slider {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .range-slider input[type="range"] {
+            flex: 1;
+        }
+        
+        .range-value {
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .heat-map-container {
+            width: 100%;
+            height: 300px;
+            position: relative;
+            margin-top: 15px;
+        }
+        
+        .stress-test-container {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        
+        .risk-category {
+            padding: 3px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+            font-size: 0.8em;
+        }
+        
+        .risk-low {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .risk-medium {
+            background-color: #FF9800;
+            color: white;
+        }
+        
+        .risk-high {
+            background-color: #F44336;
+            color: white;
+        }
+        
+        .risk-metrics {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .metric-box {
+            flex: 1;
+            min-width: 120px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            text-align: center;
+        }
+        
+        .metric-box h4 {
+            margin: 0 0 5px 0;
+            font-size: 14px;
+            color: #555;
+        }
+        
+        .metric-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .input-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .input-group label {
+            flex: 1;
+            margin-right: 10px;
+        }
+        
+        .input-group input {
+            width: 100px;
+        }
+    </style>
+</head>
+<body>
+    <div class="banner">
+        <h1>Mortgage-Backed Securities (MBS) Structuring Game</h1>
+        <p>Learn about MBS structuring by creating your own pools and tranches, then test how they perform under different market conditions.</p>
+    </div>
+    
+    <div class="tabs">
+        <button class="tab-button active" onclick="openTab(event, 'intro')">Introduction</button>
+        <button class="tab-button" onclick="openTab(event, 'game')">Structuring Game</button>
+        <button class="tab-button" onclick="openTab(event, 'ltv-analyzer')">LTV Risk Analyzer</button>
+        <button class="tab-button" onclick="openTab(event, 'about')">About MBS</button>
+    </div>
+    
+    <div id="intro" class="tab-content" style="display: block;">
+        <h2>Welcome to the MBS Structuring Game!</h2>
+        <p>This interactive tool lets you experience how mortgage-backed securities (MBS) are structured and how they perform under different market conditions.</p>
+        
+        <h3>How to Play:</h3>
+        <ol>
+            <li>Select mortgages from the available pool to create your MBS.</li>
+            <li>Structure your security by dividing it into tranches (senior, mezzanine, junior).</li>
+            <li>Set interest rates for each tranche.</li>
+            <li>Choose a market scenario and run the simulation.</li>
+            <li>Analyze how your structure performs.</li>
+        </ol>
+        
+        <h3>Key Concepts:</h3>
+        <ul>
+            <li><strong>Tranches:</strong> Different layers of the security with varying risk and return profiles.</li>
+            <li><strong>Waterfall Structure:</strong> Losses are applied to the most junior tranches first, protecting senior tranches.</li>
+            <li><strong>Credit Enhancement:</strong> The protection provided to senior tranches by the subordinate tranches.</li>
+            <li><strong>Yield:</strong> The return investors receive from each tranche.</li>
+            <li><strong>Cash Flow:</strong> How payments from the mortgage pool are distributed to different tranches over time.</li>
+            <li><strong>Loan-to-Value (LTV):</strong> Ratio of loan amount to property value - a key indicator of default risk.</li>
+        </ul>
+        
+        <p>Click on the different tabs above to explore the various features of the game!</p>
+    </div>
+    
+    <div id="game" class="tab-content">
+        <div class="container">
+            <div class="left-panel panel">
+                <div class="mortgage-pool">
+                    <h2>Available Mortgage Pool</h2>
+                    <p>Select mortgages to include in your security.</p>
+                    
+                    <div class="controls">
+                        <button id="selectAll" class="button button-blue">Select All</button>
+                        <button id="clearSelection" class="button button-red">Clear Selection</button>
+                    </div>
+                    
+                    <div id="mortgagePool" class="mortgage-list">
+                        <!-- Mortgages will be populated by JavaScript -->
+                    </div>
+                    
+                    <div id="poolSummary" class="panel" style="margin-top: 20px; display: block; border: 1px solid #90caf9;">
+                        <h3>Pool Summary</h3>
+                        <p>Loading pool summary...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="right-panel panel">
+                <h2>MBS Structure</h2>
+                <p>Define the tranches of your mortgage-backed security.</p>
+                
+                <div class="tranche-container">
+                    <div class="tranche senior">
+                        <h3>Senior Tranche <span class="tooltip">?<span class="tooltiptext">The highest-rated, safest tranche with the lowest yield. Losses hit this tranche last.</span></span></h3>
+                        <div>
+                            <label for="seniorSize">Size (% of pool):</label>
+                            <input type="number" id="seniorSize" min="0" max="100" step="0.1" value="70">
+                            
+                            <label for="seniorRate">Interest Rate (%):</label>
+                            <input type="number" id="seniorRate" min="0" max="20" step="0.1" value="4.0">
+                        </div>
+                    </div>
+                    
+                    <div class="tranche mezzanine">
+                        <h3>Mezzanine Tranche <span class="tooltip">?<span class="tooltiptext">Medium-risk tranche with moderate yield. Losses hit this tranche after the junior tranche is depleted.</span></span></h3>
+                        <div>
+                            <label for="mezzSize">Size (% of pool):</label>
+                            <input type="number" id="mezzSize" min="0" max="100" step="0.1" value="20">
+                            
+                            <label for="mezzRate">Interest Rate (%):</label>
+                            <input type="number" id="mezzRate" min="0" max="20" step="0.1" value="6.0">
+                        </div>
+                    </div>
+                    
+                    <div class="tranche junior">
+                        <h3>Junior Tranche <span class="tooltip">?<span class="tooltiptext">The riskiest tranche with the highest yield. Losses hit this tranche first.</span></span></h3>
+                        <div>
+                            <label for="juniorSize">Size (% of pool):</label>
+                            <input type="number" id="juniorSize" min="0" max="100" step="0.1" value="10">
+                            
+                            <label for="juniorRate">Interest Rate (%):</label>
+                            <input type="number" id="juniorRate" min="0" max="20" step="0.1" value="9.0">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="scenario-selector">
+                    <h3>Market Scenario <span class="tooltip">?<span class="tooltiptext">Different economic conditions affect default rates and prepayment speeds.</span></span></h3>
+                    <select id="scenarioSelect">
+                        <option value="base">Base Case (Stable Economy)</option>
+                        <option value="recession">Recession</option>
+                        <option value="boom">Housing Boom</option>
+                        <option value="rising">Rising Interest Rates</option>
+                        <option value="falling">Falling Interest Rates</option>
+                    </select>
+                    <div id="scenarioDetails">
+                        <!-- Scenario details will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button id="runSimulation" class="button">Run Simulation</button>
+                    <button id="resetStructure" class="button button-red">Reset Structure</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="simulationResults" class="panel simulation-results" style="display: none;">
+            <h2>Simulation Results</h2>
+            
+            <div class="progress-container">
+                <h3>Tranche Performance</h3>
+                
+                <p><strong>Senior Tranche Payment:</strong></p>
+                <div class="progress-bar">
+                    <div id="seniorProgress" class="progress" style="width: 100%;">100%</div>
+                </div>
+                
+                <p><strong>Mezzanine Tranche Payment:</strong></p>
+                <div class="progress-bar">
+                    <div id="mezzProgress" class="progress" style="width: 100%;">100%</div>
+                </div>
+                
+                <p><strong>Junior Tranche Payment:</strong></p>
+                <div class="progress-bar">
+                    <div id="juniorProgress" class="progress" style="width: 100%;">100%</div>
+                </div>
+            </div>
+            
+            <div class="tranche-results">
+                <h3>Tranche Results</h3>
+                <table id="trancheResults">
+                    <thead>
+                        <tr>
+                            <th>Tranche</th>
+                            <th>Target Return</th>
+                            <th>Actual Return</th>
+                            <th>Loss Rate</th>
+                            <th>Rating</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Results will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="dollarValueBreakdown">
+                <!-- Dollar value breakdown will be populated by JavaScript -->
+            </div>
+            
+            <div id="totalReturnPanel" class="total-return-panel" style="display: none;">
+                <h3>Total MBS Performance</h3>
+                
+                <div class="total-return-formula">
+                    <p><strong>Expected Return Calculation:</strong></p>
+                    <div id="expectedReturnFormula"></div>
+                </div>
+                
+                <div class="total-return-formula">
+                    <p><strong>Actual Return Calculation:</strong></p>
+                    <div id="actualReturnFormula"></div>
+                </div>
+                
+                <div class="comparison-container">
+                    <div class="comparison-box expected-return">
+                        <h4>Mortgage Pool</h4>
+                        <p>Weighted Avg Rate: <span id="weightedAvgPoolRate">0.00%</span></p>
+                    </div>
+                    
+                    <div class="comparison-box expected-return">
+                        <h4>Expected Yield</h4>
+                        <p><span id="expectedYield">0.00%</span></p>
+                    </div>
+                    
+                    <div class="comparison-box actual-return">
+                        <h4>Actual Yield</h4>
+                        <p><span id="actualYield">0.00%</span></p>
+                    </div>
+                    
+                    <div class="comparison-box return-difference">
+                        <h4>Difference</h4>
+                        <p><span id="yieldDifference">0.00%</span></p>
+                    </div>
+                </div>
+                
+                <p><strong>Excess Spread:</strong> <span id="excessSpread">0.00%</span></p>
+            </div>
+            
+            <!-- Cash Flow Visualization Panel -->
+            <div id="cashFlowPanel" class="cash-flow-panel" style="display: none;">
+                <h3>Cash Flow Visualization <span class="tooltip">?<span class="tooltiptext">Shows how cash flows from the mortgage pool are distributed to different tranches over time.</span></span></h3>
+                
+                <div class="cash-flow-controls">
+                    <label for="cashFlowPeriod">Time Period:</label>
+                    <select id="cashFlowPeriod" style="width: auto; margin: 0 10px;">
+                        <option value="5">5 Years</option>
+                        <option value="10">10 Years</option>
+                        <option value="15">15 Years</option>
+                        <option value="30" selected>30 Years</option>
+                    </select>
+                    
+                    <label for="cashFlowView">View:</label>
+                    <select id="cashFlowView" style="width: auto; margin: 0 10px;">
+                        <option value="stacked">Stacked</option>
+                        <option value="separate">Separate Lines</option>
+                    </select>
+                </div>
+                
+                <div class="chart-legend" style="margin-bottom: 10px;">
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: #4CAF50;"></span>
+                        <span>Senior Tranche</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: #FF9800;"></span>
+                        <span>Mezzanine Tranche</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: #F44336;"></span>
+                        <span>Junior Tranche</span>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="cashFlowChart"></canvas>
+                </div>
+                
+                <p class="chart-description" style="margin-top: 15px;">
+                    This chart shows how cash flows (principal and interest payments) from the mortgage pool are distributed to each tranche over time.
+                    The senior tranche receives payments first, followed by the mezzanine and junior tranches according to the waterfall structure.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- New LTV Risk Analyzer Tab -->
+    <div id="ltv-analyzer" class="tab-content">
+        <h2>Loan-to-Value (LTV) Risk Analyzer</h2>
+        <p>Analyze how LTV ratios impact default risk and overall pool quality. The LTV ratio is the loan amount divided by the property value and is a key indicator of default risk.</p>
+        
+        <div class="grid-container">
+            <div class="panel">
+                <h3>LTV Range Filter <span class="tooltip">?<span class="tooltiptext">Use the sliders to filter mortgages by LTV range. This helps you understand how different LTV segments affect pool quality.</span></span></h3>
+                
+                <div class="ltv-controls">
+                    <div class="range-slider">
+                        <span>Min LTV:</span>
+                        <input type="range" id="minLTV" min="50" max="100" step="1" value="50">
+                        <span class="range-value" id="minLTVValue">50%</span>
+                    </div>
+                    
+                    <div class="range-slider">
+                        <span>Max LTV:</span>
+                        <input type="range" id="maxLTV" min="50" max="100" step="1" value="100">
+                        <span class="range-value" id="maxLTVValue">100%</span>
+                    </div>
+                </div>
+                
+                <div class="mortgage-list" id="ltvMortgageList">
+                    <!-- Mortgages filtered by LTV will be displayed here -->
+                </div>
+                
+                <div class="risk-metrics" style="margin-top: 20px;">
+                    <div class="metric-box">
+                        <h4>Filtered Mortgages</h4>
+                        <div class="metric-value" id="filteredCount">0</div>
+                    </div>
+                    <div class="metric-box">
+                        <h4>Average LTV</h4>
+                        <div class="metric-value" id="avgLTV">0%</div>
+                    </div>
+                    <div class="metric-box">
+                        <h4>Average Default Prob</h4>
+                        <div class="metric-value" id="avgDefaultProb">0%</div>
+                    </div>
+                    <div class="metric-box">
+                        <h4>Total Principal</h4>
+                        <div class="metric-value" id="totalPrincipal">$0</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h3>LTV vs Default Probability <span class="tooltip">?<span class="tooltiptext">This chart shows the relationship between LTV ratios and default probabilities across the mortgage pool.</span></span></h3>
+                
+                <div class="chart-container">
+                    <canvas id="ltvChart"></canvas>
+                </div>
+                
+                <p class="chart-description">
+                    Higher LTV ratios generally correlate with higher default probabilities. This is because borrowers with less equity in their homes are more likely to default, especially if home prices decline.
+                </p>
+            </div>
+        </div>
+        
+        <div class="panel" style="margin-top: 20px;">
+            <h3>LTV Heatmap <span class="tooltip">?<span class="tooltiptext">This heatmap visualizes the distribution of LTV ratios and default probabilities in the mortgage pool.</span></span></h3>
+            
+            <div class="heat-map-container">
+                <canvas id="ltvHeatmap"></canvas>
+            </div>
+            
+            <p class="chart-description">
+                The heatmap shows the concentration of mortgages across different LTV ranges and default probability levels. Darker colors indicate higher concentrations of mortgages.
+            </p>
+        </div>
+        
+        <div class="panel stress-test-container">
+            <h3>Home Price Stress Test <span class="tooltip">?<span class="tooltiptext">Test how a decline in home prices would affect LTV ratios and default risk in the mortgage pool.</span></span></h3>
+            
+            <div class="input-group">
+                <label>Home Price Decline (%):</label>
+                <input type="range" id="homeDecline" min="0" max="50" step="1" value="0">
+                <span class="range-value" id="homeDeclineValue">0%</span>
+            </div>
+            
+            <button id="runStressTest" class="button">Run Stress Test</button>
+            
+            <div id="stressTestResults" style="margin-top: 15px; display: none;">
+                <h4>Stress Test Results</h4>
+                
+                <div class="risk-metrics">
+                    <div class="metric-box">
+                        <h4>Original Avg LTV</h4>
+                        <div class="metric-value" id="originalLTV">75%</div>
+                    </div>
+                    <div class="metric-box">
+                        <h4>Stressed Avg LTV</h4>
+                        <div class="metric-value" id="stressedLTV">85%</div>
+                    </div>
+                    <div class="metric-box">
+                        <h4>Underwater Loans</h4>
+                        <div class="metric-value" id="underwaterLoans">15%</div>
+                    </div>
+                    <div class="metric-box">
+                        <h4>Default Risk Increase</h4>
+                        <div class="metric-value" id="defaultRiskIncrease">+45%</div>
+                    </div>
+                </div>
+                
+                <h4 style="margin-top: 15px;">Risk Impact by Tranche</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tranche</th>
+                            <th>Original Loss Rate</th>
+                            <th>Stressed Loss Rate</th>
+                            <th>Change</th>
+                            <th>Risk Level</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stressTestTranches">
+                        <!-- Will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div id="about" class="tab-content">
+        <h2>About Mortgage-Backed Securities (MBS)</h2>
+        
+        <p>Mortgage-backed securities (MBS) are investment products that package pools of residential mortgages into securities that can be sold to investors. Here's how they work:</p>
+        
+        <h3>The MBS Process:</h3>
+        <ol>
+            <li><strong>Origination:</strong> Banks and mortgage lenders issue mortgage loans to homebuyers.</li>
+            <li><strong>Pooling:</strong> These loans are sold to investment banks or government-sponsored enterprises (like Fannie Mae or Freddie Mac) who pool similar mortgages together.</li>
+            <li><strong>Securitization:</strong> The pool is structured into a security with different tranches (slices) that have different risk-return profiles.</li>
+            <li><strong>Sale to Investors:</strong> These tranches are sold to investors who receive the principal and interest payments from the underlying mortgages.</li>
+        </ol>
+        
+        <h3>Tranches and the Waterfall Structure:</h3>
+        <p>MBS typically use a "waterfall" payment structure where:</p>
+        <ul>
+            <li><strong>Senior Tranches:</strong> Receive payments first and have the lowest risk and return.</li>
+            <li><strong>Mezzanine Tranches:</strong> Receive payments after senior tranches are paid and have moderate risk and return.</li>
+            <li><strong>Junior/Equity Tranches:</strong> Receive payments last and have the highest risk and potential return.</li>
+        </ul>
+        
+        <p>If mortgages in the pool default, losses hit the junior tranches first, providing "credit enhancement" to the more senior tranches.</p>
+        
+        <h3>Key Risks:</h3>
+        <ul>
+            <li><strong>Default Risk:</strong> Risk that borrowers fail to repay their mortgages.</li>
+            <li><strong>Prepayment Risk:</strong> Risk that borrowers repay their mortgages early (usually when interest rates fall), forcing investors to reinvest at lower rates.</li>
+            <li><strong>Interest Rate Risk:</strong> Changes in interest rates affect the value of mortgage-backed securities.</li>
+            <li><strong>LTV Risk:</strong> Higher loan-to-value ratios increase the risk of default, especially in declining housing markets.</li>
+        </ul>
+        
+        <h3>Understanding Loan-to-Value (LTV):</h3>
+        <p>Loan-to-Value (LTV) ratio is a critical risk metric in mortgage lending and MBS analysis:</p>
+        <ul>
+            <li><strong>Definition:</strong> The ratio of the loan amount to the appraised value of the property.</li>
+            <li><strong>Example:</strong> A $200,000 loan on a $250,000 property has an LTV of 80% ($200,000 ÷ $250,000).</li>
+            <li><strong>Risk Indication:</strong> Higher LTVs represent higher risk:
+                <ul>
+                    <li><strong>LTV < 80%:</strong> Generally considered lower risk.</li>
+                    <li><strong>LTV 80%-95%:</strong> Moderate risk, may require mortgage insurance.</li>
+                    <li><strong>LTV > 95%:</strong> Higher risk, minimal homeowner equity.</li>
+                </ul>
+            </li>
+            <li><strong>Housing Market Impact:</strong> In declining housing markets, high LTV loans can quickly become "underwater" (negative equity), increasing default probability.</li>
+        </ul>
+        
+        <p>This game simplifies many aspects of MBS structuring but demonstrates the basic principles of how tranching and the waterfall structure work to allocate risk and return.</p>
+    </div>
+    
+    <script>
+
+        
+        // Mock mortgage data
+        const mortgages = [
+            { id: 1, borrower: "Smith", principal: 250000, rate: 4.5, term: 30, fico: 760, ltv: 70, defaultProb: 2 },
+            { id: 2, borrower: "Johnson", principal: 320000, rate: 4.2, term: 30, fico: 780, ltv: 65, defaultProb: 1.5 },
+            { id: 3, borrower: "Williams", principal: 175000, rate: 4.7, term: 15, fico: 740, ltv: 75, defaultProb: 2.5 },
+            { id: 4, borrower: "Jones", principal: 420000, rate: 4.0, term: 30, fico: 800, ltv: 60, defaultProb: 1 },
+            { id: 5, borrower: "Brown", principal: 280000, rate: 5.0, term: 30, fico: 680, ltv: 85, defaultProb: 5 },
+            { id: 6, borrower: "Davis", principal: 195000, rate: 4.8, term: 15, fico: 720, ltv: 80, defaultProb: 3 },
+            { id: 7, borrower: "Miller", principal: 350000, rate: 4.3, term: 30, fico: 750, ltv: 72, defaultProb: 2.2 },
+            { id: 8, borrower: "Wilson", principal: 230000, rate: 5.2, term: 30, fico: 660, ltv: 90, defaultProb: 6 },
+            { id: 9, borrower: "Moore", principal: 310000, rate: 4.6, term: 30, fico: 735, ltv: 75, defaultProb: 2.7 },
+            { id: 10, borrower: "Taylor", principal: 275000, rate: 4.9, term: 30, fico: 695, ltv: 82, defaultProb: 4 },
+            { id: 11, borrower: "Anderson", principal: 185000, rate: 4.5, term: 15, fico: 730, ltv: 78, defaultProb: 2.8 },
+            { id: 12, borrower: "Thomas", principal: 390000, rate: 4.1, term: 30, fico: 775, ltv: 68, defaultProb: 1.7 },
+            { id: 13, borrower: "Harris", principal: 265000, rate: 4.7, term: 30, fico: 715, ltv: 85, defaultProb: 4.5 },
+            { id: 14, borrower: "Martin", principal: 430000, rate: 3.9, term: 30, fico: 790, ltv: 60, defaultProb: 1.2 },
+            { id: 15, borrower: "Clark", principal: 210000, rate: 5.0, term: 15, fico: 675, ltv: 88, defaultProb: 5.5 },
+            { id: 16, borrower: "Lewis", principal: 370000, rate: 4.4, term: 30, fico: 740, ltv: 75, defaultProb: 2.6 },
+            { id: 17, borrower: "Walker", principal: 290000, rate: 4.8, term: 30, fico: 700, ltv: 82, defaultProb: 3.8 },
+            { id: 18, borrower: "Rodriguez", principal: 340000, rate: 4.3, term: 30, fico: 755, ltv: 70, defaultProb: 2.1 },
+            { id: 19, borrower: "Hill", principal: 225000, rate: 5.1, term: 15, fico: 690, ltv: 86, defaultProb: 4.7 },
+            { id: 20, borrower: "Young", principal: 410000, rate: 4.0, term: 30, fico: 785, ltv: 62, defaultProb: 1.3 }
+        ];
+        
+        // Market scenarios
+        const scenarios = {
+            base: {
+                name: "Base Case (Stable Economy)",
+                description: "Stable economy with moderate default rates and prepayment speeds.",
+                defaultMultiplier: 1.0,
+                prepaymentMultiplier: 1.0,
+                interestRateShift: 0
+            },
+            recession: {
+                name: "Recession",
+                description: "Economic downturn with higher unemployment leading to increased default rates and slower prepayments.",
+                defaultMultiplier: 3.0,
+                prepaymentMultiplier: 0.5,
+                interestRateShift: -1.0
+            },
+            boom: {
+                name: "Housing Boom",
+                description: "Strong housing market with rising prices, lower defaults, and higher prepayment speeds as borrowers refinance or sell.",
+                defaultMultiplier: 0.5,
+                prepaymentMultiplier: 1.5,
+                interestRateShift: 0.5
+            },
+            rising: {
+                name: "Rising Interest Rates",
+                description: "Interest rates increasing, leading to slower prepayments but potential stress on adjustable-rate mortgages.",
+                defaultMultiplier: 1.2,
+                prepaymentMultiplier: 0.7,
+                interestRateShift: 2.0
+            },
+            falling: {
+                name: "Falling Interest Rates",
+                description: "Interest rates decreasing, leading to higher prepayment speeds as borrowers refinance.",
+                defaultMultiplier: 0.8,
+                prepaymentMultiplier: 2.0,
+                interestRateShift: -2.0
+            }
+        };
+
+        // Chart instances
+        let cashFlowChart = null;
+        let ltvChart = null;
+        let ltvHeatmapChart = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM fully loaded");
+            
+            // Make sure selectedMortgages is initialized correctly
+            if (!window.selectedMortgages) {
+                window.selectedMortgages = new Set();
+            }
+            
+            // Add click listener for tab switching to ensure pool summary is visible
+            const tabButtons = document.querySelectorAll('.tab-button');
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    if (this.textContent === 'Structuring Game') {
+                        console.log("Switched to game tab, refreshing pool summary");
+                        setTimeout(updatePoolSummary, 100);
+                    }
+                });
+            });
+            
+            // Populate mortgage pool
+            const mortgagePoolElement = document.getElementById('mortgagePool');
+            console.log("Mortgage pool element found:", !!mortgagePoolElement);
+            
+            if (mortgagePoolElement) {
+                mortgages.forEach(mortgage => {
+                    const mortgageElement = document.createElement('div');
+                    mortgageElement.className = 'mortgage';
+                    mortgageElement.dataset.id = mortgage.id;
+                    mortgageElement.innerHTML = `
+                        <p><strong>Borrower:</strong> ${mortgage.borrower}</p>
+                        <p><strong>Principal:</strong> $${mortgage.principal.toLocaleString()}</p>
+                        <p><strong>Rate:</strong> ${mortgage.rate}%</p>
+                        <p><strong>Term:</strong> ${mortgage.term} years</p>
+                        <p><strong>FICO:</strong> ${mortgage.fico}</p>
+                        <p><strong>LTV:</strong> ${mortgage.ltv}%</p>
+                        <p><strong>Default Prob:</strong> ${mortgage.defaultProb}%</p>
+                    `;
+                    
+                    mortgageElement.addEventListener('click', function() {
+                        if (this.classList.contains('selected')) {
+                            this.classList.remove('selected');
+                            window.selectedMortgages.delete(mortgage.id);
+                        } else {
+                            this.classList.add('selected');
+                            window.selectedMortgages.add(mortgage.id);
+                        }
+                        updatePoolSummary();
+                    });
+                    
+                    mortgagePoolElement.appendChild(mortgageElement);
+                });
+            } else {
+                console.error("Could not find mortgage pool element");
+            }
+            
+            // Select All and Clear Selection buttons
+            const selectAllButton = document.getElementById('selectAll');
+            const clearSelectionButton = document.getElementById('clearSelection');
+            
+            if (selectAllButton) {
+                selectAllButton.addEventListener('click', function() {
+                    const mortgageElements = document.querySelectorAll('#mortgagePool .mortgage');
+                    mortgageElements.forEach(element => {
+                        element.classList.add('selected');
+                        window.selectedMortgages.add(parseInt(element.dataset.id));
+                    });
+                    updatePoolSummary();
+                });
+            }
+            
+            if (clearSelectionButton) {
+                clearSelectionButton.addEventListener('click', function() {
+                    const mortgageElements = document.querySelectorAll('#mortgagePool .mortgage');
+                    mortgageElements.forEach(element => {
+                        element.classList.remove('selected');
+                    });
+                    window.selectedMortgages.clear();
+                    updatePoolSummary();
+                });
+            }
+            
+            // Update scenario details
+            const scenarioSelect = document.getElementById('scenarioSelect');
+            if (scenarioSelect) {
+                scenarioSelect.addEventListener('change', function() {
+                    updateScenarioDetails();
+                });
+                
+                // Initialize scenario details
+                updateScenarioDetails();
+            }
+            
+            // Create initial pool summary - force initial view
+            setTimeout(() => {
+                console.log("Initializing pool summary");
+                const poolSummaryElement = document.getElementById('poolSummary');
+                
+                if (!poolSummaryElement) {
+                    console.error("Error: Pool summary element not found during initialization");
+                } else {
+                    poolSummaryElement.style.display = 'block';
+                    poolSummaryElement.innerHTML = '<h3>Pool Summary</h3><p>No mortgages selected.</p>';
+                }
+            }, 100);
+            
+            // Ensure Select All works initially - with proper delay to make sure DOM is ready
+            setTimeout(() => {
+                const selectAllBtn = document.getElementById('selectAll');
+                if (selectAllBtn) {
+                    selectAllBtn.click();
+                    console.log("Select All clicked");
+                }
+            }, 200);
+            
+            // Run simulation
+            const runSimulationButton = document.getElementById('runSimulation');
+            if (runSimulationButton) {
+                runSimulationButton.addEventListener('click', function() {
+                    if (window.selectedMortgages.size === 0) {
+                        alert('Please select at least one mortgage.');
+                        return;
+                    }
+                    
+                    const seniorSize = parseFloat(document.getElementById('seniorSize').value || 0);
+                    const mezzSize = parseFloat(document.getElementById('mezzSize').value || 0);
+                    const juniorSize = parseFloat(document.getElementById('juniorSize').value || 0);
+                    
+                    const totalSize = seniorSize + mezzSize + juniorSize;
+                    
+                    if (Math.abs(totalSize - 100) > 0.1) {
+                        alert('Tranche sizes must sum to 100%.');
+                        return;
+                    }
+                    
+                    runSimulation();
+                });
+            }
+            
+            // Reset structure
+            const resetStructureButton = document.getElementById('resetStructure');
+            if (resetStructureButton) {
+                resetStructureButton.addEventListener('click', function() {
+                    document.getElementById('seniorSize').value = 70;
+                    document.getElementById('mezzSize').value = 20;
+                    document.getElementById('juniorSize').value = 10;
+                    document.getElementById('seniorRate').value = 4.0;
+                    document.getElementById('mezzRate').value = 6.0;
+                    document.getElementById('juniorRate').value = 9.0;
+                    
+                    // Hide simulation results
+                    document.getElementById('simulationResults').style.display = 'none';
+                    document.getElementById('totalReturnPanel').style.display = 'none';
+                    document.getElementById('cashFlowPanel').style.display = 'none';
+                    
+                    if (cashFlowChart) {
+                        cashFlowChart.destroy();
+                        cashFlowChart = null;
+                    }
+                });
+            }
+
+            // Cash flow period and view change listeners
+            const cashFlowPeriodSelect = document.getElementById('cashFlowPeriod');
+            const cashFlowViewSelect = document.getElementById('cashFlowView');
+            
+            if (cashFlowPeriodSelect) {
+                cashFlowPeriodSelect.addEventListener('change', updateCashFlowChart);
+            }
+            
+            if (cashFlowViewSelect) {
+                cashFlowViewSelect.addEventListener('change', updateCashFlowChart);
+            }
+            
+            // Initialize LTV Risk Analyzer features
+            initLTVAnalyzer();
+            
+            // Fix: Make updatePoolSummary more robust
+            function updatePoolSummary() {
+                const poolSummaryElement = document.getElementById('poolSummary');
+                
+                if (!poolSummaryElement) {
+                    console.error("Pool summary element not found");
+                    return;
+                }
+                
+                // Make sure selectedMortgages is a Set and has a size property
+                if (!window.selectedMortgages || typeof window.selectedMortgages.size !== 'number') {
+                    console.error("selectedMortgages is not properly initialized");
+                    window.selectedMortgages = new Set();
+                }
+                
+                console.log("Updating pool summary, selected mortgages:", window.selectedMortgages.size);
+                
+                if (window.selectedMortgages.size === 0) {
+                    poolSummaryElement.innerHTML = '<h3>Pool Summary</h3><p>No mortgages selected.</p>';
+                    return;
+                }
+                
+                // Convert selectedMortgages Set to an array of mortgage objects
+                const selectedMortgageObjects = mortgages.filter(mortgage => 
+                    window.selectedMortgages.has(mortgage.id));
+                
+                if (selectedMortgageObjects.length === 0) {
+                    console.error("No matching mortgage objects found");
+                    poolSummaryElement.innerHTML = '<h3>Pool Summary</h3><p>Error: Selected mortgages not found.</p>';
+                    return;
+                }
+                
+                // Calculate summary statistics safely with error handling
+                try {
+                    const totalPrincipal = selectedMortgageObjects.reduce((sum, mortgage) => sum + mortgage.principal, 0);
+                    const weightedAvgRate = selectedMortgageObjects.reduce((sum, mortgage) => 
+                        sum + (mortgage.rate * mortgage.principal), 0) / totalPrincipal;
+                    const weightedAvgTerm = selectedMortgageObjects.reduce((sum, mortgage) => 
+                        sum + (mortgage.term * mortgage.principal), 0) / totalPrincipal;
+                    const weightedAvgFICO = selectedMortgageObjects.reduce((sum, mortgage) => 
+                        sum + (mortgage.fico * mortgage.principal), 0) / totalPrincipal;
+                    const weightedAvgLTV = selectedMortgageObjects.reduce((sum, mortgage) => 
+                        sum + (mortgage.ltv * mortgage.principal), 0) / totalPrincipal;
+                    const weightedAvgDefaultProb = selectedMortgageObjects.reduce((sum, mortgage) => 
+                        sum + (mortgage.defaultProb * mortgage.principal), 0) / totalPrincipal;
+                    
+                    poolSummaryElement.innerHTML = `
+                        <h3>Pool Summary</h3>
+                        <p><strong>Number of Mortgages:</strong> ${selectedMortgageObjects.length}</p>
+                        <p><strong>Total Principal:</strong> $${totalPrincipal.toLocaleString()}</p>
+                        <p><strong>Weighted Avg Rate:</strong> ${weightedAvgRate.toFixed(2)}%</p>
+                        <p><strong>Weighted Avg Term:</strong> ${weightedAvgTerm.toFixed(1)} years</p>
+                        <p><strong>Weighted Avg FICO:</strong> ${weightedAvgFICO.toFixed(0)}</p>
+                        <p><strong>Weighted Avg LTV:</strong> ${weightedAvgLTV.toFixed(1)}%</p>
+                        <p><strong>Weighted Avg Default Prob:</strong> ${weightedAvgDefaultProb.toFixed(2)}%</p>
+                    `;
+                } catch (error) {
+                    console.error("Error calculating mortgage statistics:", error);
+                    poolSummaryElement.innerHTML = `
+                        <h3>Pool Summary</h3>
+                        <p>Error calculating summary statistics. Please try again.</p>
+                    `;
+                }
+            }
+            
+            function updateScenarioDetails() {
+                const scenarioSelect = document.getElementById('scenarioSelect');
+                const scenarioDetailsElement = document.getElementById('scenarioDetails');
+                
+                if (!scenarioSelect || !scenarioDetailsElement) {
+                    console.error("Scenario elements not found");
+                    return;
+                }
+                
+                const selectedScenario = scenarios[scenarioSelect.value];
+                
+                if (!selectedScenario) {
+                    console.error("Selected scenario not found");
+                    return;
+                }
+                
+                scenarioDetailsElement.innerHTML = `
+                    <p>${selectedScenario.description}</p>
+                    <p><strong>Default Multiplier:</strong> ${selectedScenario.defaultMultiplier}x</p>
+                    <p><strong>Prepayment Multiplier:</strong> ${selectedScenario.prepaymentMultiplier}x</p>
+                    <p><strong>Interest Rate Shift:</strong> ${selectedScenario.interestRateShift > 0 ? '+' : ''}${selectedScenario.interestRateShift}%</p>
+                `;
+            }
+            
+            function runSimulation() {
+                const simulationResultsElement = document.getElementById('simulationResults');
+                
+                if (!simulationResultsElement) {
+                    console.error("Simulation results element not found");
+                    return;
+                }
+                
+                simulationResultsElement.style.display = 'block';
+                
+                // Get selected mortgages safely
+                if (!window.selectedMortgages || window.selectedMortgages.size === 0) {
+                    alert('Please select at least one mortgage.');
+                    return;
+                }
+                
+                const selectedMortgageObjects = mortgages.filter(mortgage => 
+                    window.selectedMortgages.has(mortgage.id));
+                
+                if (selectedMortgageObjects.length === 0) {
+                    alert('Error: No selected mortgages found.');
+                    return;
+                }
+                
+                const totalPrincipal = selectedMortgageObjects.reduce((sum, mortgage) => sum + mortgage.principal, 0);
+                const weightedAvgRate = selectedMortgageObjects.reduce((sum, mortgage) => 
+                    sum + (mortgage.rate * mortgage.principal), 0) / totalPrincipal;
+                
+                const scenarioSelect = document.getElementById('scenarioSelect');
+                if (!scenarioSelect) {
+                    console.error("Scenario select element not found");
+                    return;
+                }
+                
+                const selectedScenario = scenarios[scenarioSelect.value];
+                
+                // Calculate default rate based on scenario
+                const weightedAvgDefaultProb = selectedMortgageObjects.reduce((sum, mortgage) => 
+                    sum + (mortgage.defaultProb * mortgage.principal), 0) / totalPrincipal;
+                const scenarioDefaultRate = weightedAvgDefaultProb * selectedScenario.defaultMultiplier;
+                
+                // Calculate tranche sizes
+                const seniorSizeElement = document.getElementById('seniorSize');
+                const mezzSizeElement = document.getElementById('mezzSize');
+                const juniorSizeElement = document.getElementById('juniorSize');
+                
+                if (!seniorSizeElement || !mezzSizeElement || !juniorSizeElement) {
+                    console.error("Tranche size elements not found");
+                    return;
+                }
+                
+                const seniorSize = parseFloat(seniorSizeElement.value) / 100;
+                const mezzSize = parseFloat(mezzSizeElement.value) / 100;
+                const juniorSize = parseFloat(juniorSizeElement.value) / 100;
+                
+                const seniorAmount = totalPrincipal * seniorSize;
+                const mezzAmount = totalPrincipal * mezzSize;
+                const juniorAmount = totalPrincipal * juniorSize;
+                
+                // Calculate tranche interest rates
+                const seniorRateElement = document.getElementById('seniorRate');
+                const mezzRateElement = document.getElementById('mezzRate');
+                const juniorRateElement = document.getElementById('juniorRate');
+                
+                if (!seniorRateElement || !mezzRateElement || !juniorRateElement) {
+                    console.error("Tranche rate elements not found");
+                    return;
+                }
+                
+                const seniorRate = parseFloat(seniorRateElement.value) / 100;
+                const mezzRate = parseFloat(mezzRateElement.value) / 100;
+                const juniorRate = parseFloat(juniorRateElement.value) / 100;
+                
+                // Calculate losses
+                const totalLoss = totalPrincipal * (scenarioDefaultRate / 100);
+                
+                // Apply waterfall structure for losses
+                let juniorLoss = Math.min(totalLoss, juniorAmount);
+                let mezzLoss = Math.min(totalLoss - juniorLoss, mezzAmount);
+                let seniorLoss = Math.min(totalLoss - juniorLoss - mezzLoss, seniorAmount);
+                
+                // Calculate loss rates
+                const juniorLossRate = juniorLoss / juniorAmount * 100;
+                const mezzLossRate = mezzLoss / mezzAmount * 100;
+                const seniorLossRate = seniorLoss / seniorAmount * 100;
+                
+                // Update progress bars
+                const juniorPaymentRate = 100 - juniorLossRate;
+                const mezzPaymentRate = 100 - mezzLossRate;
+                const seniorPaymentRate = 100 - seniorLossRate;
+                
+                const juniorProgressElement = document.getElementById('juniorProgress');
+                const mezzProgressElement = document.getElementById('mezzProgress');
+                const seniorProgressElement = document.getElementById('seniorProgress');
+                
+                if (juniorProgressElement) {
+                    juniorProgressElement.style.width = juniorPaymentRate + '%';
+                    juniorProgressElement.textContent = juniorPaymentRate.toFixed(1) + '%';
+                }
+                
+                if (mezzProgressElement) {
+                    mezzProgressElement.style.width = mezzPaymentRate + '%';
+                    mezzProgressElement.textContent = mezzPaymentRate.toFixed(1) + '%';
+                }
+                
+                if (seniorProgressElement) {
+                    seniorProgressElement.style.width = seniorPaymentRate + '%';
+                    seniorProgressElement.textContent = seniorPaymentRate.toFixed(1) + '%';
+                }
+                
+                // Determine ratings based on loss rates
+                const seniorRating = getRating(seniorLossRate);
+                const mezzRating = getRating(mezzLossRate);
+                const juniorRating = getRating(juniorLossRate);
+                
+                // Calculate actual returns
+                const seniorActualReturn = seniorRate * (1 - seniorLossRate / 100);
+                const mezzActualReturn = mezzRate * (1 - mezzLossRate / 100);
+                const juniorActualReturn = juniorRate * (1 - juniorLossRate / 100);
+                
+                // Update results table
+                const trancheResultsElement = document.getElementById('trancheResults');
+                if (trancheResultsElement) {
+                    const tbody = trancheResultsElement.getElementsByTagName('tbody')[0];
+                    if (tbody) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td>Senior</td>
+                                <td>${(seniorRate * 100).toFixed(2)}%</td>
+                                <td>${(seniorActualReturn * 100).toFixed(2)}%</td>
+                                <td>${seniorLossRate.toFixed(2)}%</td>
+                                <td><span class="rating ${seniorRating.toLowerCase()}">${seniorRating}</span></td>
+                            </tr>
+                            <tr>
+                                <td>Mezzanine</td>
+                                <td>${(mezzRate * 100).toFixed(2)}%</td>
+                                <td>${(mezzActualReturn * 100).toFixed(2)}%</td>
+                                <td>${mezzLossRate.toFixed(2)}%</td>
+                                <td><span class="rating ${mezzRating.toLowerCase()}">${mezzRating}</span></td>
+                            </tr>
+                            <tr>
+                                <td>Junior</td>
+                                <td>${(juniorRate * 100).toFixed(2)}%</td>
+                                <td>${(juniorActualReturn * 100).toFixed(2)}%</td>
+                                <td>${juniorLossRate.toFixed(2)}%</td>
+                                <td><span class="rating ${juniorRating.toLowerCase()}">${juniorRating}</span></td>
+                            </tr>
+                        `;
+                    }
+                }
+                
+                // Update dollar value breakdown
+                const dollarValueBreakdownElement = document.getElementById('dollarValueBreakdown');
+                if (dollarValueBreakdownElement) {
+                    dollarValueBreakdownElement.innerHTML = `
+                        <h3>Dollar Value Breakdown</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Tranche</th>
+                                    <th>Initial Principal</th>
+                                    <th>Loss Amount</th>
+                                    <th>Remaining Principal</th>
+                                    <th>Interest Earned</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Senior</td>
+                                    <td>$${seniorAmount.toLocaleString()}</td>
+                                    <td>$${seniorLoss.toLocaleString()}</td>
+                                    <td>$${(seniorAmount - seniorLoss).toLocaleString()}</td>
+                                    <td>$${(seniorActualReturn * seniorAmount).toLocaleString()}</td>
+                                </tr>
+                                <tr>
+                                    <td>Mezzanine</td>
+                                    <td>$${mezzAmount.toLocaleString()}</td>
+                                    <td>$${mezzLoss.toLocaleString()}</td>
+                                    <td>$${(mezzAmount - mezzLoss).toLocaleString()}</td>
+                                    <td>$${(mezzActualReturn * mezzAmount).toLocaleString()}</td>
+                                </tr>
+                                <tr>
+                                    <td>Junior</td>
+                                    <td>$${juniorAmount.toLocaleString()}</td>
+                                    <td>$${juniorLoss.toLocaleString()}</td>
+                                    <td>$${(juniorAmount - juniorLoss).toLocaleString()}</td>
+                                    <td>$${(juniorActualReturn * juniorAmount).toLocaleString()}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Total</strong></td>
+                                    <td><strong>$${totalPrincipal.toLocaleString()}</strong></td>
+                                    <td><strong>$${totalLoss.toLocaleString()}</strong></td>
+                                    <td><strong>$${(totalPrincipal - totalLoss).toLocaleString()}</strong></td>
+                                    <td><strong>$${((seniorActualReturn * seniorAmount) + 
+                                                    (mezzActualReturn * mezzAmount) + 
+                                                    (juniorActualReturn * juniorAmount)).toLocaleString()}</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    `;
+                }
+                
+                // Show total return panel
+                const totalReturnPanelElement = document.getElementById('totalReturnPanel');
+                if (totalReturnPanelElement) {
+                    totalReturnPanelElement.style.display = 'block';
+                }
+                
+                // Calculate weighted average rates
+                const expectedYield = (seniorRate * seniorSize) + (mezzRate * mezzSize) + (juniorRate * juniorSize);
+                const actualYield = (seniorActualReturn * seniorSize) + (mezzActualReturn * mezzSize) + (juniorActualReturn * juniorSize);
+                const excessSpread = weightedAvgRate / 100 - expectedYield;
+                
+                // Update formula displays with labels
+                const expectedReturnFormulaElement = document.getElementById('expectedReturnFormula');
+                const actualReturnFormulaElement = document.getElementById('actualReturnFormula');
+                
+                if (expectedReturnFormulaElement) {
+                    expectedReturnFormulaElement.textContent = 
+                        `(Senior Rate: ${(seniorRate * 100).toFixed(2)}% × Senior Size: ${(seniorSize * 100).toFixed(1)}%) + ` +
+                        `(Mezz Rate: ${(mezzRate * 100).toFixed(2)}% × Mezz Size: ${(mezzSize * 100).toFixed(1)}%) + ` +
+                        `(Junior Rate: ${(juniorRate * 100).toFixed(2)}% × Junior Size: ${(juniorSize * 100).toFixed(1)}%) = ${(expectedYield * 100).toFixed(2)}%`;
+                }
+                
+                if (actualReturnFormulaElement) {
+                    actualReturnFormulaElement.textContent = 
+                        `(Senior Actual: ${(seniorActualReturn * 100).toFixed(2)}% × Senior Size: ${(seniorSize * 100).toFixed(1)}%) + ` +
+                        `(Mezz Actual: ${(mezzActualReturn * 100).toFixed(2)}% × Mezz Size: ${(mezzSize * 100).toFixed(1)}%) + ` +
+                        `(Junior Actual: ${(juniorActualReturn * 100).toFixed(2)}% × Junior Size: ${(juniorSize * 100).toFixed(1)}%) = ${(actualYield * 100).toFixed(2)}%`;
+                }
+                
+                // Update comparison values
+                const weightedAvgPoolRateElement = document.getElementById('weightedAvgPoolRate');
+                const expectedYieldElement = document.getElementById('expectedYield');
+                const actualYieldElement = document.getElementById('actualYield');
+                const yieldDifferenceElement = document.getElementById('yieldDifference');
+                const excessSpreadElement = document.getElementById('excessSpread');
+                
+                if (weightedAvgPoolRateElement) {
+                    weightedAvgPoolRateElement.textContent = weightedAvgRate.toFixed(2) + "%";
+                }
+                
+                if (expectedYieldElement) {
+                    expectedYieldElement.textContent = (expectedYield * 100).toFixed(2) + "%";
+                }
+                
+                if (actualYieldElement) {
+                    actualYieldElement.textContent = (actualYield * 100).toFixed(2) + "%";
+                }
+                
+                if (yieldDifferenceElement) {
+                    yieldDifferenceElement.textContent = ((actualYield - expectedYield) * 100).toFixed(2) + "%";
+                }
+                
+                if (excessSpreadElement) {
+                    excessSpreadElement.textContent = (excessSpread * 100).toFixed(2) + "%";
+                }
+                
+                // Show cash flow panel
+                const cashFlowPanelElement = document.getElementById('cashFlowPanel');
+                if (cashFlowPanelElement) {
+                    cashFlowPanelElement.style.display = 'block';
+                }
+                
+                // Generate cash flow data
+                const cashFlowData = generateCashFlowData(
+                    selectedMortgageObjects, 
+                    seniorSize, mezzSize, juniorSize,
+                    seniorRate, mezzRate, juniorRate,
+                    seniorLossRate, mezzLossRate, juniorLossRate,
+                    selectedScenario
+                );
+                
+                // Create or update the cash flow chart
+                createCashFlowChart(cashFlowData);
+            }
+            
+            function getRating(lossRate) {
+                if (lossRate < 0.5) return "AAA";
+                if (lossRate < 1) return "AA";
+                if (lossRate < 2) return "A";
+                if (lossRate < 4) return "BBB";
+                if (lossRate < 8) return "BB";
+                if (lossRate < 15) return "B";
+                return "CCC";
+            }
+            
+            function generateCashFlowData(
+                mortgages, 
+                seniorSize, mezzSize, juniorSize,
+                seniorRate, mezzRate, juniorRate,
+                seniorLossRate, mezzLossRate, juniorLossRate,
+                scenario
+            ) {
+                // Get the maximum loan term (in years)
+                const maxTerm = Math.max(...mortgages.map(mortgage => mortgage.term));
+                
+                // Get selected period from UI
+                const periodSelect = document.getElementById('cashFlowPeriod');
+                if (!periodSelect) {
+                    console.error("Cash flow period select element not found");
+                    return { labels: [], seniorCashFlows: [], mezzCashFlows: [], juniorCashFlows: [] };
+                }
+                
+                const selectedPeriod = parseInt(periodSelect.value);
+                
+                // Use the smaller of maxTerm or selectedPeriod
+                const years = Math.min(maxTerm, selectedPeriod);
+                
+                // Calculate total principal
+                const totalPrincipal = mortgages.reduce((sum, mortgage) => sum + mortgage.principal, 0);
+                
+                // Calculate tranche sizes in dollars
+                const seniorPrincipal = totalPrincipal * seniorSize;
+                const mezzPrincipal = totalPrincipal * mezzSize;
+                const juniorPrincipal = totalPrincipal * juniorSize;
+                
+                // Apply loss rates
+                const seniorPrincipalAfterLoss = seniorPrincipal * (1 - seniorLossRate / 100);
+                const mezzPrincipalAfterLoss = mezzPrincipal * (1 - mezzLossRate / 100);
+                const juniorPrincipalAfterLoss = juniorPrincipal * (1 - juniorLossRate / 100);
+                
+                // Weighted average interest rate and default rate
+                const weightedAvgRate = mortgages.reduce((sum, mortgage) => 
+                    sum + (mortgage.rate * mortgage.principal), 0) / totalPrincipal;
+                
+                // Calculate monthly payment for each mortgage (simplified)
+                mortgages.forEach(mortgage => {
+                    // Monthly interest rate
+                    const monthlyRate = mortgage.rate / 100 / 12;
+                    // Number of payments
+                    const numPayments = mortgage.term * 12;
+                    // Calculate monthly payment (P&I)
+                    mortgage.monthlyPayment = (mortgage.principal * monthlyRate) / 
+                                            (1 - Math.pow(1 + monthlyRate, -numPayments));
+                });
+                
+                // Initialize arrays for cash flows
+                const labels = [];
+                const seniorCashFlows = [];
+                const mezzCashFlows = [];
+                const juniorCashFlows = [];
+                
+                // Prepayment model parameters based on scenario
+                const basePrepaymentRate = 0.06; // 6% annual CPR (Conditional Prepayment Rate)
+                const prepaymentRate = basePrepaymentRate * scenario.prepaymentMultiplier;
+                
+                // Default model parameters based on scenario
+                const baseDefaultRate = 0.01; // 1% annual CDR (Conditional Default Rate)
+                const defaultRate = baseDefaultRate * scenario.defaultMultiplier;
+                
+                // Calculate monthly prepayment rate (SMM) from annual rate (CPR)
+                const monthlyPrepaymentRate = 1 - Math.pow(1 - prepaymentRate, 1/12);
+                
+                // Calculate monthly default rate (MDR) from annual rate (CDR)
+                const monthlyDefaultRate = 1 - Math.pow(1 - defaultRate, 1/12);
+                
+                // Remaining balance of the mortgage pool
+                let remainingBalance = totalPrincipal;
+                
+                // Track how much is left for each tranche
+                let remainingSenior = seniorPrincipalAfterLoss;
+                let remainingMezz = mezzPrincipalAfterLoss;
+                let remainingJunior = juniorPrincipalAfterLoss;
+                
+                // Calculate cash flows for each year
+                for (let year = 1; year <= years; year++) {
+                    labels.push(`Year ${year}`);
+                    
+                    // Simplified cash flow calculation
+                    const yearlyInterest = remainingBalance * (weightedAvgRate / 100);
+                    
+                    // Calculate scheduled principal payment (simplified)
+                    const scheduledPrincipalPayment = remainingBalance / (maxTerm - year + 1);
+                    
+                    // Calculate prepayments for the year
+                    const prepayment = remainingBalance * prepaymentRate;
+                    
+                    // Calculate defaults for the year
+                    const defaultAmount = remainingBalance * defaultRate;
+                    
+                    // Total principal payment (scheduled + prepayment - defaults)
+                    const totalPrincipalPayment = Math.max(0, scheduledPrincipalPayment + prepayment - defaultAmount);
+                    
+                    // Total cash flow for the year
+                    const totalCashFlow = yearlyInterest + totalPrincipalPayment;
+                    
+                    // Update remaining balance
+                    remainingBalance -= totalPrincipalPayment;
+                    
+                    // Distribute cash flows based on waterfall structure
+                    // Senior tranche gets paid first
+                    const seniorInterest = remainingSenior * seniorRate;
+                    let seniorPrincipalPayment = 0;
+                    
+                    if (totalCashFlow >= seniorInterest) {
+                        seniorPrincipalPayment = Math.min(remainingSenior, totalCashFlow - seniorInterest);
+                        remainingSenior -= seniorPrincipalPayment;
+                    }
+                    
+                    const seniorCashFlow = seniorInterest + seniorPrincipalPayment;
+                    
+                    // Mezzanine tranche gets paid second
+                    const mezzInterest = remainingMezz * mezzRate;
+                    let mezzPrincipalPayment = 0;
+                    
+                    if (totalCashFlow >= seniorCashFlow + mezzInterest) {
+                        mezzPrincipalPayment = Math.min(remainingMezz, totalCashFlow - seniorCashFlow - mezzInterest);
+                        remainingMezz -= mezzPrincipalPayment;
+                    }
+                    
+                    const mezzCashFlow = mezzInterest + mezzPrincipalPayment;
+                    
+                    // Junior tranche gets paid last
+                    const juniorInterest = remainingJunior * juniorRate;
+                    let juniorPrincipalPayment = 0;
+                    
+                    if (totalCashFlow >= seniorCashFlow + mezzCashFlow + juniorInterest) {
+                        juniorPrincipalPayment = Math.min(remainingJunior, totalCashFlow - seniorCashFlow - mezzCashFlow - juniorInterest);
+                        remainingJunior -= juniorPrincipalPayment;
+                    }
+                    
+                    const juniorCashFlow = juniorInterest + juniorPrincipalPayment;
+                    
+                    // Push cash flows to arrays
+                    seniorCashFlows.push(seniorCashFlow);
+                    mezzCashFlows.push(mezzCashFlow);
+                    juniorCashFlows.push(juniorCashFlow);
+                }
+                
+                return {
+                    labels,
+                    seniorCashFlows,
+                    mezzCashFlows,
+                    juniorCashFlows
+                };
+            }
+            
+            function createCashFlowChart(data) {
+                const canvas = document.getElementById('cashFlowChart');
+                if (!canvas) {
+                    console.error("Cash flow chart canvas not found");
+                    return;
+                }
+                
+                const ctx = canvas.getContext('2d');
+                
+                const viewTypeSelect = document.getElementById('cashFlowView');
+                if (!viewTypeSelect) {
+                    console.error("Cash flow view select element not found");
+                    return;
+                }
+                
+                const viewType = viewTypeSelect.value;
+                
+                // Destroy previous chart if it exists
+                if (cashFlowChart) {
+                    cashFlowChart.destroy();
+                }
+                
+                // Chart configuration
+                const chartConfig = {
+                    type: viewType === 'stacked' ? 'bar' : 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [
+                            {
+                                label: 'Senior Tranche',
+                                data: data.seniorCashFlows,
+                                backgroundColor: 'rgba(76, 175, 80, 0.7)',
+                                borderColor: '#4CAF50',
+                                borderWidth: 1,
+                                stack: viewType === 'stacked' ? 'stack1' : undefined
+                            },
+                            {
+                                label: 'Mezzanine Tranche',
+                                data: data.mezzCashFlows,
+                                backgroundColor: 'rgba(255, 152, 0, 0.7)',
+                                borderColor: '#FF9800',
+                                borderWidth: 1,
+                                stack: viewType === 'stacked' ? 'stack1' : undefined
+                            },
+                            {
+                                label: 'Junior Tranche',
+                                data: data.juniorCashFlows,
+                                backgroundColor: 'rgba(244, 67, 54, 0.7)',
+                                borderColor: '#F44336',
+                                borderWidth: 1,
+                                stack: viewType === 'stacked' ? 'stack1' : undefined
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Annual Cash Flows by Tranche',
+                                font: {
+                                    size: 16
+                                }
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.dataset.label + ': $' + context.parsed.y.toLocaleString();
+                                    }
+                                }
+                            },
+                            legend: {
+                                display: false // We use our custom legend
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Time Period'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Cash Flow ($)'
+                                },
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        if (value >= 1000000) {
+                                            return '$' + (value / 1000000).toFixed(1) + 'M';
+                                        } else if (value >= 1000) {
+                                            return '$' + (value / 1000).toFixed(1) + 'K';
+                                        }
+                                        return '$' + value;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+                
+                // Create chart
+                cashFlowChart = new Chart(ctx, chartConfig);
+            }
+            
+            function updateCashFlowChart() {
+                // Only update if the chart exists and simulation has been run
+                if (cashFlowChart && document.getElementById('cashFlowPanel').style.display !== 'none') {
+                    // Get the current data from the chart
+                    const currentData = {
+                        labels: cashFlowChart.data.labels,
+                        seniorCashFlows: cashFlowChart.data.datasets[0].data,
+                        mezzCashFlows: cashFlowChart.data.datasets[1].data,
+                        juniorCashFlows: cashFlowChart.data.datasets[2].data
+                    };
+                    
+                    // Get the view type
+                    const viewTypeSelect = document.getElementById('cashFlowView');
+                    if (!viewTypeSelect) {
+                        console.error("Cash flow view select element not found");
+                        return;
+                    }
+                    
+                    const viewType = viewTypeSelect.value;
+                    
+                    // Update chart type and stacking
+                    cashFlowChart.config.type = viewType === 'stacked' ? 'bar' : 'line';
+                    
+                    cashFlowChart.data.datasets.forEach(dataset => {
+                        dataset.stack = viewType === 'stacked' ? 'stack1' : undefined;
+                    });
+                    
+                    // If period changed, regenerate data
+                    const periodSelect = document.getElementById('cashFlowPeriod');
+                    if (!periodSelect) {
+                        console.error("Cash flow period select element not found");
+                        return;
+                    }
+                    
+                    const selectedPeriod = parseInt(periodSelect.value);
+                    if (selectedPeriod !== currentData.labels.length) {
+                        // Need to rerun simulation to get new data
+                        const runSimulationButton = document.getElementById('runSimulation');
+                        if (runSimulationButton) {
+                            runSimulationButton.click();
+                        }
+                    } else {
+                        // Just update the chart
+                        cashFlowChart.update();
+                    }
+                }
+            }
+            
+            // LTV Risk Analyzer Features
+            function initLTVAnalyzer() {
+                // Initialize LTV range sliders
+                const minLTVSlider = document.getElementById('minLTV');
+                const maxLTVSlider = document.getElementById('maxLTV');
+                const minLTVValue = document.getElementById('minLTVValue');
+                const maxLTVValue = document.getElementById('maxLTVValue');
+                
+                if (minLTVSlider && maxLTVSlider && minLTVValue && maxLTVValue) {
+                    // Update display values when sliders change
+                    minLTVSlider.addEventListener('input', function() {
+                        minLTVValue.textContent = this.value + '%';
+                        // Ensure min doesn't exceed max
+                        if (parseInt(this.value) > parseInt(maxLTVSlider.value)) {
+                            maxLTVSlider.value = this.value;
+                            maxLTVValue.textContent = this.value + '%';
+                        }
+                        updateLTVFilteredMortgages();
+                    });
+                    
+                    maxLTVSlider.addEventListener('input', function() {
+                        maxLTVValue.textContent = this.value + '%';
+                        // Ensure max isn't less than min
+                        if (parseInt(this.value) < parseInt(minLTVSlider.value)) {
+                            minLTVSlider.value = this.value;
+                            minLTVValue.textContent = this.value + '%';
+                        }
+                        updateLTVFilteredMortgages();
+                    });
+                }
+                
+                // Initialize home price stress test slider
+                const homeDeclineSlider = document.getElementById('homeDecline');
+                const homeDeclineValue = document.getElementById('homeDeclineValue');
+                
+                if (homeDeclineSlider && homeDeclineValue) {
+                    homeDeclineSlider.addEventListener('input', function() {
+                        homeDeclineValue.textContent = this.value + '%';
+                    });
+                }
+                
+                // Run stress test button
+                const runStressTestButton = document.getElementById('runStressTest');
+                if (runStressTestButton) {
+                    runStressTestButton.addEventListener('click', runStressTest);
+                }
+                
+                // Initialize LTV charts
+                createLTVChart();
+                createLTVHeatmap();
+                
+                // Initial update of filtered mortgages
+                updateLTVFilteredMortgages();
+            }
+            
+            function updateLTVFilteredMortgages() {
+                const minLTVSlider = document.getElementById('minLTV');
+                const maxLTVSlider = document.getElementById('maxLTV');
+                
+                if (!minLTVSlider || !maxLTVSlider) {
+                    console.error("LTV sliders not found");
+                    return;
+                }
+                
+                const minLTV = parseInt(minLTVSlider.value);
+                const maxLTV = parseInt(maxLTVSlider.value);
+                
+                // Filter mortgages by LTV range
+                const filteredMortgages = mortgages.filter(mortgage => 
+                    mortgage.ltv >= minLTV && mortgage.ltv <= maxLTV
+                );
+                
+                // Update metrics
+                const filteredCount = document.getElementById('filteredCount');
+                const avgLTV = document.getElementById('avgLTV');
+                const avgDefaultProb = document.getElementById('avgDefaultProb');
+                const totalPrincipal = document.getElementById('totalPrincipal');
+                
+                if (!filteredCount || !avgLTV || !avgDefaultProb || !totalPrincipal) {
+                    console.error("LTV metric elements not found");
+                    return;
+                }
+                
+                filteredCount.textContent = filteredMortgages.length;
+                
+                if (filteredMortgages.length > 0) {
+                    const totalPrincipalValue = filteredMortgages.reduce((sum, mortgage) => sum + mortgage.principal, 0);
+                    
+                    // Calculate weighted averages
+                    const weightedAvgLTV = filteredMortgages.reduce((sum, mortgage) => 
+                        sum + (mortgage.ltv * mortgage.principal), 0) / totalPrincipalValue;
+                    
+                    const weightedAvgDefaultProb = filteredMortgages.reduce((sum, mortgage) => 
+                        sum + (mortgage.defaultProb * mortgage.principal), 0) / totalPrincipalValue;
+                    
+                    avgLTV.textContent = weightedAvgLTV.toFixed(1) + '%';
+                    avgDefaultProb.textContent = weightedAvgDefaultProb.toFixed(2) + '%';
+                    totalPrincipal.textContent = '$' + totalPrincipalValue.toLocaleString();
+                } else {
+                    avgLTV.textContent = '0%';
+                    avgDefaultProb.textContent = '0%';
+                    totalPrincipal.textContent = '$0';
+                }
+                
+                // Display filtered mortgages
+                displayFilteredMortgages(filteredMortgages);
+            }
+            
+            function displayFilteredMortgages(filteredMortgages) {
+                const mortgageListElement = document.getElementById('ltvMortgageList');
+                if (!mortgageListElement) {
+                    console.error("LTV mortgage list element not found");
+                    return;
+                }
+                
+                mortgageListElement.innerHTML = '';
+                
+                if (filteredMortgages.length === 0) {
+                    mortgageListElement.innerHTML = '<p>No mortgages match the selected LTV range.</p>';
+                    return;
+                }
+                
+                // Sort by LTV (highest to lowest)
+                const sortedMortgages = [...filteredMortgages].sort((a, b) => b.ltv - a.ltv);
+                
+                // Display top 8 for space reasons
+                const displayCount = Math.min(8, sortedMortgages.length);
+                
+                for (let i = 0; i < displayCount; i++) {
+                    const mortgage = sortedMortgages[i];
+                    const mortgageElement = document.createElement('div');
+                    mortgageElement.className = 'mortgage';
+                    
+                    // Color-code by default probability
+                    let riskClass = '';
+                    if (mortgage.defaultProb < 2) {
+                        riskClass = 'risk-low';
+                    } else if (mortgage.defaultProb < 5) {
+                        riskClass = 'risk-medium';
+                    } else {
+                        riskClass = 'risk-high';
+                    }
+                    
+                    mortgageElement.innerHTML = `
+                        <p><strong>Borrower:</strong> ${mortgage.borrower}</p>
+                        <p><strong>LTV:</strong> ${mortgage.ltv}%</p>
+                        <p><strong>Default Prob:</strong> <span class="risk-category ${riskClass}">${mortgage.defaultProb}%</span></p>
+                        <p><strong>Principal:</strong> ${mortgage.principal.toLocaleString()}</p>
+                    `;
+                    
+                    mortgageListElement.appendChild(mortgageElement);
+                }
+                
+                // If there are more mortgages than what we displayed
+                if (filteredMortgages.length > displayCount) {
+                    const moreMessage = document.createElement('p');
+                    moreMessage.innerHTML = `<em>+ ${filteredMortgages.length - displayCount} more mortgages in this LTV range</em>`;
+                    mortgageListElement.appendChild(moreMessage);
+                }
+            }
+            
+            function createLTVChart() {
+                const canvas = document.getElementById('ltvChart');
+                if (!canvas) {
+                    console.error("LTV chart canvas not found");
+                    return;
+                }
+                
+                const ctx = canvas.getContext('2d');
+                
+                // Prepare data
+                const ltvValues = [];
+                const defaultProbValues = [];
+                const pointSizes = [];
+                const pointColors = [];
+                
+                mortgages.forEach(mortgage => {
+                    ltvValues.push(mortgage.ltv);
+                    defaultProbValues.push(mortgage.defaultProb);
+                    
+                    // Size point based on principal amount (normalized)
+                    const normalizedSize = Math.max(5, Math.min(20, mortgage.principal / 50000));
+                    pointSizes.push(normalizedSize);
+                    
+                    // Color based on FICO score
+                    const r = Math.max(0, Math.min(255, (850 - mortgage.fico) * 2));
+                    const g = Math.max(0, Math.min(255, (mortgage.fico - 600) * 1.5));
+                    const b = 100;
+                    pointColors.push(`rgba(${r}, ${g}, ${b}, 0.7)`);
+                });
+                
+                // Create chart
+                ltvChart = new Chart(ctx, {
+                    type: 'scatter',
+                    data: {
+                        datasets: [{
+                            label: 'Mortgages',
+                            data: ltvValues.map((ltv, i) => ({
+                                x: ltv,
+                                y: defaultProbValues[i]
+                            })),
+                            backgroundColor: pointColors,
+                            pointRadius: pointSizes,
+                            pointHoverRadius: (context) => context.raw.r + 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'LTV vs Default Probability',
+                                font: {
+                                    size: 16
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const index = context.dataIndex;
+                                        const mortgage = mortgages[index];
+                                        return [
+                                            `Borrower: ${mortgage.borrower}`,
+                                            `LTV: ${mortgage.ltv}%`,
+                                            `Default Prob: ${mortgage.defaultProb}%`,
+                                            `FICO: ${mortgage.fico}`,
+                                            `Principal: ${mortgage.principal.toLocaleString()}`
+                                        ];
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'LTV (%)'
+                                },
+                                min: 50,
+                                max: 100
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Default Probability (%)'
+                                },
+                                min: 0,
+                                max: Math.max(...defaultProbValues) * 1.1
+                            }
+                        }
+                    }
+                });
+                
+                // Add trendline
+                addTrendline();
+                
+                function addTrendline() {
+                    // Simple linear regression
+                    const n = ltvValues.length;
+                    const sumX = ltvValues.reduce((a, b) => a + b, 0);
+                    const sumY = defaultProbValues.reduce((a, b) => a + b, 0);
+                    const sumXY = ltvValues.map((x, i) => x * defaultProbValues[i]).reduce((a, b) => a + b, 0);
+                    const sumXX = ltvValues.map(x => x * x).reduce((a, b) => a + b, 0);
+                    
+                    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+                    const intercept = (sumY - slope * sumX) / n;
+                    
+                    // Create trendline data
+                    const trendlineData = [
+                        {x: 50, y: Math.max(0, slope * 50 + intercept)},
+                        {x: 100, y: Math.max(0, slope * 100 + intercept)}
+                    ];
+                    
+                    // Add trendline dataset
+                    ltvChart.data.datasets.push({
+                        label: 'Trend',
+                        data: trendlineData,
+                        showLine: true,
+                        pointRadius: 0,
+                        borderColor: 'rgba(255, 99, 132, 0.8)',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        fill: false
+                    });
+                    
+                    ltvChart.update();
+                }
+            }
+            
+            function createLTVHeatmap() {
+                const canvas = document.getElementById('ltvHeatmap');
+                if (!canvas) {
+                    console.error("LTV heatmap canvas not found");
+                    return;
+                }
+                
+                const ctx = canvas.getContext('2d');
+                
+                // Define LTV and default probability bins
+                const ltvBins = ['50-60%', '60-70%', '70-80%', '80-90%', '90-100%'];
+                const defaultProbBins = ['0-2%', '2-4%', '4-6%', '6%+'];
+                
+                // Count mortgages in each bin
+                const dataArray = [];
+                
+                for (let i = 0; i < defaultProbBins.length; i++) {
+                    for (let j = 0; j < ltvBins.length; j++) {
+                        // Count mortgages in this bin
+                        const ltvMin = 50 + j * 10;
+                        const ltvMax = 60 + j * 10;
+                        
+                        let defaultProbMin, defaultProbMax;
+                        if (i < 3) {
+                            defaultProbMin = i * 2;
+                            defaultProbMax = (i + 1) * 2;
+                        } else {
+                            defaultProbMin = 6;
+                            defaultProbMax = 100;
+                        }
+                        
+                        const count = mortgages.filter(mortgage => 
+                            mortgage.ltv >= ltvMin && mortgage.ltv < ltvMax &&
+                            mortgage.defaultProb >= defaultProbMin && mortgage.defaultProb < defaultProbMax
+                        ).length;
+                        
+                        dataArray.push({
+                            x: ltvBins[j],
+                            y: defaultProbBins[i],
+                            v: count
+                        });
+                    }
+                }
+                
+                // Calculate max value for color scaling
+                const maxValue = Math.max(...dataArray.map(d => d.v));
+                
+                // Create heatmap
+                ltvHeatmapChart = new Chart(ctx, {
+                    type: 'scatter',
+                    data: {
+                        datasets: [{
+                            label: 'Mortgage Distribution',
+                            data: dataArray,
+                            backgroundColor: context => {
+                                const value = context.raw.v;
+                                const intensity = value / maxValue;
+                                return `rgba(65, 105, 225, ${Math.max(0.1, intensity)})`;
+                            },
+                            borderColor: 'white',
+                            borderWidth: 1,
+                            pointRadius: 25,
+                            pointHoverRadius: 30
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Mortgage Distribution by LTV and Default Probability',
+                                font: {
+                                    size: 16
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return [
+                                            `LTV: ${context.raw.x}`,
+                                            `Default Prob: ${context.raw.y}`,
+                                            `Number of Mortgages: ${context.raw.v}`
+                                        ];
+                                    }
+                                }
+                            },
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            x: {
+                                type: 'category',
+                                position: 'bottom',
+                                title: {
+                                    display: true,
+                                    text: 'Loan-to-Value (LTV) Range'
+                                }
+                            },
+                            y: {
+                                type: 'category',
+                                position: 'left',
+                                title: {
+                                    display: true,
+                                    text: 'Default Probability Range'
+                                },
+                                reverse: true
+                            }
+                        }
+                    }
+                });
+            }
+            
+            function runStressTest() {
+                const homeDeclineSlider = document.getElementById('homeDecline');
+                const stressTestResultsElement = document.getElementById('stressTestResults');
+                
+                if (!homeDeclineSlider || !stressTestResultsElement) {
+                    console.error("Stress test elements not found");
+                    return;
+                }
+                
+                const homeDeclinePercent = parseInt(homeDeclineSlider.value);
+                
+                // If no decline, no need to run the stress test
+                if (homeDeclinePercent === 0) {
+                    alert('Please set a home price decline percentage greater than 0%.');
+                    return;
+                }
+                
+                // Get all mortgage data
+                const totalPrincipal = mortgages.reduce((sum, mortgage) => sum + mortgage.principal, 0);
+                
+                // Calculate weighted average LTV
+                const originalAvgLTV = mortgages.reduce((sum, mortgage) => 
+                    sum + (mortgage.ltv * mortgage.principal), 0) / totalPrincipal;
+                
+                // Calculate stressed LTV based on home price decline
+                // If home value decreases by X%, the LTV increases by a factor of 1/(1-X/100)
+                const stressMultiplier = 1 / (1 - homeDeclinePercent / 100);
+                
+                // Calculate new LTVs for each mortgage
+                const stressedMortgages = mortgages.map(mortgage => {
+                    const stressedLTV = Math.min(mortgage.ltv * stressMultiplier, 150); // Cap at 150%
+                    
+                    // Default risk increases more dramatically as LTV exceeds 100%
+                    let defaultRiskIncrease;
+                    if (stressedLTV <= 80) {
+                        defaultRiskIncrease = 1.1; // Minimal increase below 80% LTV
+                    } else if (stressedLTV <= 90) {
+                        defaultRiskIncrease = 1.3; 
+                    } else if (stressedLTV <= 100) {
+                        defaultRiskIncrease = 1.5;
+                    } else if (stressedLTV <= 110) {
+                        defaultRiskIncrease = 2.0; // Double default risk when underwater
+                    } else if (stressedLTV <= 120) {
+                        defaultRiskIncrease = 2.5;
+                    } else {
+                        defaultRiskIncrease = 3.0; // Triple default risk when deeply underwater
+                    }
+                    
+                    return {
+                        ...mortgage,
+                        originalLTV: mortgage.ltv,
+                        stressedLTV: stressedLTV,
+                        originalDefaultProb: mortgage.defaultProb,
+                        stressedDefaultProb: mortgage.defaultProb * defaultRiskIncrease,
+                        isUnderwater: stressedLTV > 100
+                    };
+                });
+                
+                // Calculate weighted average of stressed LTVs
+                const stressedAvgLTV = stressedMortgages.reduce((sum, mortgage) => 
+                    sum + (mortgage.stressedLTV * mortgage.principal), 0) / totalPrincipal;
+                
+                // Calculate percentage of underwater loans
+                const underwaterPrincipal = stressedMortgages
+                    .filter(mortgage => mortgage.isUnderwater)
+                    .reduce((sum, mortgage) => sum + mortgage.principal, 0);
+                
+                const underwaterPercentage = (underwaterPrincipal / totalPrincipal) * 100;
+                
+                // Calculate average default risk increase
+                const originalAvgDefaultProb = mortgages.reduce((sum, mortgage) => 
+                    sum + (mortgage.defaultProb * mortgage.principal), 0) / totalPrincipal;
+                
+                const stressedAvgDefaultProb = stressedMortgages.reduce((sum, mortgage) => 
+                    sum + (mortgage.stressedDefaultProb * mortgage.principal), 0) / totalPrincipal;
+                
+                const defaultRiskIncrease = ((stressedAvgDefaultProb / originalAvgDefaultProb) - 1) * 100;
+                
+                // Update results display
+                stressTestResultsElement.style.display = 'block';
+                
+                const originalLTVElement = document.getElementById('originalLTV');
+                const stressedLTVElement = document.getElementById('stressedLTV');
+                const underwaterLoansElement = document.getElementById('underwaterLoans');
+                const defaultRiskIncreaseElement = document.getElementById('defaultRiskIncrease');
+                
+                if (originalLTVElement) originalLTVElement.textContent = originalAvgLTV.toFixed(1) + '%';
+                if (stressedLTVElement) stressedLTVElement.textContent = stressedAvgLTV.toFixed(1) + '%';
+                if (underwaterLoansElement) underwaterLoansElement.textContent = underwaterPercentage.toFixed(1) + '%';
+                if (defaultRiskIncreaseElement) defaultRiskIncreaseElement.textContent = '+' + defaultRiskIncrease.toFixed(0) + '%';
+                
+                // Calculate impact on tranches
+                calculateTrancheImpact(originalAvgDefaultProb, stressedAvgDefaultProb);
+            }
+            
+            function calculateTrancheImpact(originalDefaultProb, stressedDefaultProb) {
+                // Get current tranche structure
+                const seniorSizeElement = document.getElementById('seniorSize');
+                const mezzSizeElement = document.getElementById('mezzSize');
+                const juniorSizeElement = document.getElementById('juniorSize');
+                
+                if (!seniorSizeElement || !mezzSizeElement || !juniorSizeElement) {
+                    console.error("Tranche size elements not found");
+                    return;
+                }
+                
+                const seniorSize = parseFloat(seniorSizeElement.value) / 100;
+                const mezzSize = parseFloat(mezzSizeElement.value) / 100;
+                const juniorSize = parseFloat(juniorSizeElement.value) / 100;
+                
+                const totalPrincipal = mortgages.reduce((sum, mortgage) => sum + mortgage.principal, 0);
+                
+                // Calculate tranche sizes in dollars
+                const seniorAmount = totalPrincipal * seniorSize;
+                const mezzAmount = totalPrincipal * mezzSize;
+                const juniorAmount = totalPrincipal * juniorSize;
+                
+                // Calculate original losses
+                const originalTotalLoss = totalPrincipal * (originalDefaultProb / 100);
+                
+                // Apply waterfall structure for original losses
+                let originalJuniorLoss = Math.min(originalTotalLoss, juniorAmount);
+                let originalMezzLoss = Math.min(originalTotalLoss - originalJuniorLoss, mezzAmount);
+                let originalSeniorLoss = Math.min(originalTotalLoss - originalJuniorLoss - originalMezzLoss, seniorAmount);
+                
+                // Calculate original loss rates
+                const originalJuniorLossRate = originalJuniorLoss / juniorAmount * 100;
+                const originalMezzLossRate = originalMezzLoss / mezzAmount * 100;
+                const originalSeniorLossRate = originalSeniorLoss / seniorAmount * 100;
+                
+                // Calculate stressed losses
+                const stressedTotalLoss = totalPrincipal * (stressedDefaultProb / 100);
+                
+                // Apply waterfall structure for stressed losses
+                let stressedJuniorLoss = Math.min(stressedTotalLoss, juniorAmount);
+                let stressedMezzLoss = Math.min(stressedTotalLoss - stressedJuniorLoss, mezzAmount);
+                let stressedSeniorLoss = Math.min(stressedTotalLoss - stressedJuniorLoss - stressedMezzLoss, seniorAmount);
+                
+                // Calculate stressed loss rates
+                const stressedJuniorLossRate = stressedJuniorLoss / juniorAmount * 100;
+                const stressedMezzLossRate = stressedMezzLoss / mezzAmount * 100;
+                const stressedSeniorLossRate = stressedSeniorLoss / seniorAmount * 100;
+                
+                // Update tranche impact table
+                const stressTestTranchesElement = document.getElementById('stressTestTranches');
+                if (!stressTestTranchesElement) {
+                    console.error("Stress test tranches element not found");
+                    return;
+                }
+                
+                // Function to determine risk level based on loss rate
+                function getRiskLevel(lossRate) {
+                    if (lossRate < 2) return 'Low';
+                    if (lossRate < 8) return 'Medium';
+                    return 'High';
+                }
+                
+                // Function to create the risk span element
+                function createRiskSpan(riskLevel) {
+                    let riskClass = '';
+                    if (riskLevel === 'Low') riskClass = 'risk-low';
+                    else if (riskLevel === 'Medium') riskClass = 'risk-medium';
+                    else riskClass = 'risk-high';
+                    
+                    return `<span class="risk-category ${riskClass}">${riskLevel}</span>`;
+                }
+                
+                stressTestTranchesElement.innerHTML = `
+                    <tr>
+                        <td>Senior</td>
+                        <td>${originalSeniorLossRate.toFixed(2)}%</td>
+                        <td>${stressedSeniorLossRate.toFixed(2)}%</td>
+                        <td>${(stressedSeniorLossRate - originalSeniorLossRate).toFixed(2)}%</td>
+                        <td>${createRiskSpan(getRiskLevel(stressedSeniorLossRate))}</td>
+                    </tr>
+                    <tr>
+                        <td>Mezzanine</td>
+                        <td>${originalMezzLossRate.toFixed(2)}%</td>
+                        <td>${stressedMezzLossRate.toFixed(2)}%</td>
+                        <td>${(stressedMezzLossRate - originalMezzLossRate).toFixed(2)}%</td>
+                        <td>${createRiskSpan(getRiskLevel(stressedMezzLossRate))}</td>
+                    </tr>
+                    <tr>
+                        <td>Junior</td>
+                        <td>${originalJuniorLossRate.toFixed(2)}%</td>
+                        <td>${stressedJuniorLossRate.toFixed(2)}%</td>
+                        <td>${(stressedJuniorLossRate - originalJuniorLossRate).toFixed(2)}%</td>
+                        <td>${createRiskSpan(getRiskLevel(stressedJuniorLossRate))}</td>
+                    </tr>
+                `;
+            }
+        });
+    </script>
+</body>
+</html> 
