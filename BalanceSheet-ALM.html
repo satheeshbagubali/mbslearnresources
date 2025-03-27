@@ -1,0 +1,3500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Retail Bank ALM Dashboard</title>
+  <style>
+    :root {
+      --bg-primary: #0c1426;
+      --bg-secondary: #1a2235;
+      --bg-tertiary: #232b3b;
+      --text-primary: #e0e0e0;
+      --text-secondary: #a0a0a0;
+      --text-highlight: #ffffff;
+      --border-color: #2a3548;
+      --accent-blue: #2d7bed;
+      --accent-green: #00c281;
+      --accent-red: #ff3d71;
+      --accent-orange: #ffaa00;
+      --accent-purple: #a855f7;
+      --grid-line: #2a3548;
+      --chart-line: #4671d5;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Consolas", "Monaco", monospace;
+      font-size: 12px;
+    }
+    
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      overflow-x: hidden;
+    }
+    
+    .container {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100vh;
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: var(--bg-secondary);
+      padding: 5px 10px;
+      border-bottom: 1px solid var(--border-color);
+      height: 30px;
+    }
+    
+    .logo {
+      font-weight: bold;
+      color: var(--accent-blue);
+      font-size: 14px;
+    }
+    
+    .date-time {
+      color: var(--text-secondary);
+    }
+    
+    .nav-tabs {
+      display: flex;
+      background-color: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      height: 25px;
+    }
+    
+    .tab {
+      padding: 5px 15px;
+      cursor: pointer;
+      border-right: 1px solid var(--border-color);
+    }
+    
+    .tab.active {
+      background-color: var(--bg-tertiary);
+      border-bottom: 2px solid var(--accent-blue);
+      color: var(--text-highlight);
+    }
+    
+    .tab-view {
+      display: none;
+      width: 100%;
+    }
+    
+    .tab-view.active {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+    
+    .main-content {
+      display: flex;
+      flex-wrap: wrap;
+      flex: 1;
+      padding: 5px;
+      gap: 5px;
+      overflow-y: auto;
+    }
+    
+    .panel {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    
+    .panel-header {
+      background-color: var(--bg-tertiary);
+      padding: 5px 10px;
+      font-weight: bold;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .panel-content {
+      padding: 10px;
+      height: calc(100% - 26px);
+    }
+    
+    .grid-1-1 {
+      width: calc(50% - 5px);
+      height: 280px;
+    }
+    
+    .grid-1-3 {
+      width: calc(25% - 5px);
+      height: 280px;
+    }
+    
+    .grid-full {
+      width: 100%;
+      height: 280px;
+    }
+    
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-gap: 10px;
+      height: 100%;
+    }
+    
+    .metric-card {
+      background-color: var(--bg-tertiary);
+      border-radius: 3px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+    }
+    
+    .metric-label {
+      color: var(--text-secondary);
+      font-size: 10px;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+    }
+    
+    .info-icon {
+      margin-left: 5px;
+      cursor: help;
+      color: var(--accent-blue);
+      font-size: 10px;
+    }
+    
+    .metric-value {
+      font-size: 16px;
+      font-weight: bold;
+      margin-top: 5px;
+    }
+    
+    .positive {
+      color: var(--accent-green);
+    }
+    
+    .negative {
+      color: var(--accent-red);
+    }
+    
+    .neutral {
+      color: var(--text-highlight);
+    }
+    
+    .chart-container {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+    
+    .tooltip {
+      position: absolute;
+      display: none;
+      background-color: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      padding: 8px 12px;
+      border-radius: 3px;
+      z-index: 1000;
+      max-width: 250px;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16);
+      font-size: 11px;
+      color: var(--text-primary);
+    }
+    
+    .tooltip-title {
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: var(--accent-blue);
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    th, td {
+      text-align: left;
+      padding: 5px 8px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    th {
+      background-color: var(--bg-tertiary);
+      color: var(--text-secondary);
+      font-weight: normal;
+    }
+    
+    tr:nth-child(even) {
+      background-color: var(--bg-tertiary);
+    }
+    
+    tr:hover {
+      background-color: #2c374d;
+    }
+    
+    .flex-row {
+      display: flex;
+      gap: 5px;
+    }
+    
+    .flex-column {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    
+    .footer {
+      background-color: var(--bg-secondary);
+      padding: 5px 10px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--text-secondary);
+    }
+    
+    /* For the charts */
+    canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    .filter-dropdown {
+  padding: 5px;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.filter-dropdown:hover {
+  border-color: var(--accent-blue);
+}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="logo">GBS RETAIL BANK | ALM DASHBOARD</div>
+      <div class="date-time" id="current-date-time">2025-03-25 10:30:45</div>
+    </header>
+    
+    <div class="nav-tabs">
+      <div class="tab" id="tab-overview" onclick="changeTab('overview')">ALM Overview</div>
+      <div class="tab" id="tab-liquidity" onclick="changeTab('liquidity')">Liquidity</div>
+      <div class="tab" id="tab-irr" onclick="changeTab('irr')">Interest Rate Risk</div>
+      <div class="tab" id="tab-balance-sheet" onclick="changeTab('balance-sheet')">Balance Sheet</div>
+      <div class="tab" id="tab-stress" onclick="changeTab('stress')">Stress Testing</div>
+    </div>
+    
+    <!-- Main content area with tab views -->
+    <main class="main-content">
+      <!-- Overview Tab View -->
+      <div id="view-overview" class="tab-view active">
+      <!-- Top row metrics -->
+      <div class="panel grid-full">
+        <div class="panel-header">
+          <span>ALM Key Metrics Summary</span>
+          <span>as of 2025-03-25</span>
+        </div>
+        <div class="panel-content">
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-label">
+                Net Interest Margin
+                <span class="info-icon" data-tooltip="Net Interest Margin (NIM) measures the difference between interest income and interest expense, relative to interest-earning assets. Higher is generally better.">ⓘ</span>
+              </div>
+              <div class="metric-value positive">2.85%</div>
+              <div class="trend">▲ +0.05pp</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">
+                Liquidity Coverage Ratio
+                <span class="info-icon" data-tooltip="Liquidity Coverage Ratio (LCR) measures a bank's ability to meet short-term obligations. Regulatory minimum is typically 100%.">ⓘ</span>
+              </div>
+              <div class="metric-value positive">120%</div>
+              <div class="trend">▲ +2pp</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">
+                Net Stable Funding Ratio
+                <span class="info-icon" data-tooltip="Net Stable Funding Ratio (NSFR) measures the stability of a bank's funding profile relative to the liquidity of its assets. Regulatory minimum is 100%.">ⓘ</span>
+              </div>
+              <div class="metric-value positive">115%</div>
+              <div class="trend">▲ +1pp</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">
+                Duration Gap
+                <span class="info-icon" data-tooltip="Duration Gap measures the difference between the duration of assets and liabilities. A positive gap indicates higher exposure to rising interest rates.">ⓘ</span>
+              </div>
+              <div class="metric-value neutral">2.1 yrs</div>
+              <div class="trend">◆ No Change</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">
+                EVE Sensitivity (+100bp)
+                <span class="info-icon" data-tooltip="Economic Value of Equity (EVE) Sensitivity measures the change in the economic value of equity from a 100 basis point parallel shift in interest rates.">ⓘ</span>
+              </div>
+              <div class="metric-value negative">-6.67%</div>
+              <div class="trend">▼ -0.5pp</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">
+                NII Sensitivity (+100bp)
+                <span class="info-icon" data-tooltip="Net Interest Income (NII) Sensitivity measures the change in net interest income from a 100 basis point parallel shift in interest rates.">ⓘ</span>
+              </div>
+              <div class="metric-value positive">+4.29%</div>
+              <div class="trend">▲ +0.2pp</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">
+                Loan-to-Deposit Ratio
+                <span class="info-icon" data-tooltip="Loan-to-Deposit Ratio measures the ratio of loans to deposits. Lower ratios indicate stronger liquidity positions.">ⓘ</span>
+              </div>
+              <div class="metric-value neutral">88.9%</div>
+              <div class="trend">▼ -0.3pp</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">
+                30-Day Liquidity Gap
+                <span class="info-icon" data-tooltip="30-Day Liquidity Gap represents the difference between assets and liabilities maturing within 30 days. Positive values indicate excess liquidity.">ⓘ</span>
+              </div>
+              <div class="metric-value positive">$5.0B</div>
+              <div class="trend">▲ +$0.3B</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Maturity profile and gap -->
+      <div class="panel grid-1-1">
+        <div class="panel-header">
+          <span>Maturity Profile & Gap Analysis</span>
+          <span class="info-icon" data-tooltip="Maturity Gap Analysis shows the difference between assets and liabilities across different time buckets. Positive gaps indicate more assets than liabilities in a given time bucket.">ⓘ</span>
+        </div>
+        <div class="panel-content">
+          <div class="chart-container">
+            <canvas id="maturityGapChart"></canvas>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Interest rate risk -->
+      <div class="panel grid-1-1">
+        <div class="panel-header">
+          <span>Interest Rate Risk Impact</span>
+          <span class="info-icon" data-tooltip="This chart shows the impact of different interest rate scenarios on the bank's Net Interest Income (NII) and Economic Value of Equity (EVE).">ⓘ</span>
+        </div>
+        <div class="panel-content">
+          <div class="chart-container">
+            <canvas id="interestRateRiskChart"></canvas>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Balance sheet breakdown -->
+      <div class="panel grid-1-3">
+        <div class="panel-header">
+          <span>Asset Breakdown</span>
+          <span class="info-icon" data-tooltip="Asset breakdown shows the composition of the bank's assets, including loans, securities, and other assets.">ⓘ</span>
+        </div>
+        <div class="panel-content">
+          <div class="chart-container">
+            <canvas id="assetBreakdownChart"></canvas>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Liability breakdown -->
+      <div class="panel grid-1-3">
+        <div class="panel-header">
+          <span>Liability Breakdown</span>
+          <span class="info-icon" data-tooltip="Liability breakdown shows the composition of the bank's liabilities, including deposits, borrowings, and other liabilities.">ⓘ</span>
+        </div>
+        <div class="panel-content">
+          <div class="chart-container">
+            <canvas id="liabilityBreakdownChart"></canvas>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Historical trends -->
+      <div class="panel grid-1-1">
+        <div class="panel-header">
+          <span>NIM & LCR Trends</span>
+          <span class="info-icon" data-tooltip="Quarterly trends of Net Interest Margin (NIM) and Liquidity Coverage Ratio (LCR).">ⓘ</span>
+        </div>
+        <div class="panel-content">
+          <div class="chart-container">
+            <canvas id="trendChart"></canvas>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Stress test scenarios -->
+      <div class="panel grid-1-1">
+        <div class="panel-header">
+          <span>Stress Test Scenarios</span>
+          <span class="info-icon" data-tooltip="Stress tests show the impact of various economic scenarios on the bank's key metrics. Values are shown as changes from the base case.">ⓘ</span>
+        </div>
+        <div class="panel-content">
+          <div style="height: 100%; overflow-y: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Scenario</th>
+                  <th>NII Impact</th>
+                  <th>EVE Impact</th>
+                  <th>LCR Impact</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="stressTestTable">
+                <!-- Will be populated by JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      </div>
+      
+      <!-- Interest Rate Risk Tab View -->
+      <div id="view-irr" class="tab-view">
+        <!-- IRR Header Card -->
+        <div class="panel grid-full">
+          <div class="panel-header">
+            <span>Interest Rate Risk Assessment</span>
+            <span>as of 2025-03-25</span>
+          </div>
+          <div class="panel-content">
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <div class="metric-label">
+                  EVE Sensitivity (+100bp)
+                  <span class="info-icon" data-tooltip="Economic Value of Equity (EVE) Sensitivity measures the change in the economic value of equity from a 100 basis point parallel shift in interest rates.">ⓘ</span>
+                </div>
+                <div class="metric-value negative">-6.67%</div>
+                <div class="trend">▼ -0.5pp</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">
+                  NII Sensitivity (+100bp)
+                  <span class="info-icon" data-tooltip="Net Interest Income (NII) Sensitivity measures the change in net interest income from a 100 basis point parallel shift in interest rates.">ⓘ</span>
+                </div>
+                <div class="metric-value positive">+4.29%</div>
+                <div class="trend">▲ +0.2pp</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">
+                  Duration Gap
+                  <span class="info-icon" data-tooltip="Duration Gap measures the difference between the duration of assets and liabilities. A positive gap indicates higher exposure to rising interest rates.">ⓘ</span>
+                </div>
+                <div class="metric-value neutral">2.1 yrs</div>
+                <div class="trend">◆ No Change</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">
+                  Convexity
+                  <span class="info-icon" data-tooltip="Convexity is a measure of the curvature in the relationship between bond prices and bond yields. Higher convexity means higher price sensitivity to large interest rate changes.">ⓘ</span>
+                </div>
+                <div class="metric-value neutral">0.25</div>
+                <div class="trend">▲ +0.01</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Yield Curve Analysis -->
+        <div class="panel grid-1-1">
+          <div class="panel-header">
+            <span>Yield Curve Analysis</span>
+            <span class="info-icon" data-tooltip="Current market yield curve compared to previous period and forecasted scenarios. Helps assess the impact of yield curve changes on the bank's ALM position.">ⓘ</span>
+          </div>
+          <div class="panel-content">
+            <div class="chart-container">
+              <canvas id="yieldCurveChart"></canvas>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Rate Sensitivity by Product -->
+        <div class="panel grid-1-1">
+          <div class="panel-header">
+            <span>Rate Sensitivity by Product</span>
+            <span class="info-icon" data-tooltip="Breakdown of interest rate sensitivity across different product categories. Shows how different products contribute to overall ALM risk.">ⓘ</span>
+          </div>
+          <div class="panel-content">
+            <div class="chart-container">
+              <canvas id="productSensitivityChart"></canvas>
+            </div>
+          </div>
+        </div>
+        
+        <!-- IRRBB Metrics Dashboard -->
+        <div class="panel grid-full">
+          <div class="panel-header">
+            <span>IRRBB Metrics vs Regulatory Limits</span>
+            <span class="info-icon" data-tooltip="Interest Rate Risk in the Banking Book (IRRBB) metrics compared against internal and regulatory limits. Shows the bank's compliance status with important risk thresholds.">ⓘ</span>
+          </div>
+          <div class="panel-content">
+            <div class="chart-container">
+              <canvas id="irrbbMetricsChart"></canvas>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Earnings at Risk Analysis -->
+        <div class="panel grid-1-1">
+          <div class="panel-header">
+            <span>Earnings at Risk (EaR) Analysis</span>
+            <span class="info-icon" data-tooltip="Earnings at Risk measures the potential change in net interest income over a defined period under various interest rate scenarios. Shows the potential earnings volatility due to interest rate changes.">ⓘ</span>
+          </div>
+          <div class="panel-content">
+            <div class="chart-container">
+              <canvas id="earAnalysisChart"></canvas>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Interest Rate Shock Scenarios -->
+        <div class="panel grid-1-1">
+          <div class="panel-header">
+            <span>Interest Rate Shock Scenario Results</span>
+            <span class="info-icon" data-tooltip="Results of standard and custom interest rate shock scenarios, showing impact on key ALM metrics.">ⓘ</span>
+          </div>
+          <div class="panel-content">
+            <div style="height: 100%; overflow-y: auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Scenario</th>
+                    <th>EVE Impact</th>
+                    <th>NII Impact</th>
+                    <th>Capital Impact</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="shockScenarioTable">
+                  <tr>
+                    <td>Parallel +200bp</td>
+                    <td class="negative">-12.5%</td>
+                    <td class="positive">+8.3%</td>
+                    <td class="negative">-1.2pp</td>
+                    <td class="neutral">Within Limit</td>
+                  </tr>
+                  <tr>
+                    <td>Parallel -200bp</td>
+                    <td class="positive">+10.2%</td>
+                    <td class="negative">-6.8%</td>
+                    <td class="positive">+0.9pp</td>
+                    <td class="neutral">Within Limit</td>
+                  </tr>
+                  <tr>
+                    <td>Steepener (Short Down, Long Up)</td>
+                    <td class="negative">-4.1%</td>
+                    <td class="negative">-2.5%</td>
+                    <td class="negative">-0.4pp</td>
+                    <td class="neutral">Within Limit</td>
+                  </tr>
+                  <tr>
+                    <td>Flattener (Short Up, Long Down)</td>
+                    <td class="negative">-3.2%</td>
+                    <td class="positive">+3.1%</td>
+                    <td class="negative">-0.3pp</td>
+                    <td class="neutral">Within Limit</td>
+                  </tr>
+                  <tr>
+                    <td>Short Rate Shock Up</td>
+                    <td class="negative">-7.8%</td>
+                    <td class="positive">+5.9%</td>
+                    <td class="negative">-0.8pp</td>
+                    <td class="neutral">Within Limit</td>
+                  </tr>
+                  <tr>
+                    <td>Short Rate Shock Down</td>
+                    <td class="positive">+6.5%</td>
+                    <td class="negative">-4.7%</td>
+                    <td class="positive">+0.6pp</td>
+                    <td class="neutral">Within Limit</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Liquidity Tab View -->
+      <div id="view-liquidity" class="tab-view">
+        <!-- Liquidity Metrics Header -->
+        <div class="panel grid-full">
+          <div class="panel-header">
+            <span>Liquidity Risk Assessment</span>
+            <span>as of 2025-03-25</span>
+          </div>
+          <div class="panel-content">
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <div class="metric-label">
+                  Liquidity Coverage Ratio
+                  <span class="info-icon" data-tooltip="Liquidity Coverage Ratio (LCR) measures a bank's ability to survive a 30-day stress scenario by comparing high-quality liquid assets to net cash outflows. Regulatory minimum is 100%.">ⓘ</span>
+                </div>
+                <div class="metric-value positive">120%</div>
+                <div class="trend">▲ +2pp</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">
+                  Net Stable Funding Ratio
+                  <span class="info-icon" data-tooltip="Net Stable Funding Ratio (NSFR) measures the stability of a bank's funding profile over a one-year horizon, comparing available stable funding to required stable funding. Regulatory minimum is 100%.">ⓘ</span>
+                </div>
+                <div class="metric-value positive">115%</div>
+                <div class="trend">▲ +1pp</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">
+                  Liquid Asset Buffer
+                  <span class="info-icon" data-tooltip="Total high-quality liquid assets (HQLA) available to meet short-term obligations in a stress scenario.">ⓘ</span>
+                </div>
+                <div class="metric-value neutral">$25.0B</div>
+                <div class="trend">▲ +$0.8B</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">
+                  Survival Horizon
+                  <span class="info-icon" data-tooltip="The estimated period the bank can survive using only its liquid assets without access to funding markets. Internal minimum is typically 30 days.">ⓘ</span>
+                </div>
+                <div class="metric-value positive">45 days</div>
+                <div class="trend">▲ +3 days</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Liquidity Time Buckets -->
+        <div class="panel grid-1-1">
+          <div class="panel-header">
+            <span>Liquidity Gap Analysis</span>
+            <span class="info-icon" data-tooltip="Cash inflows, outflows, and net position across different time horizons. Positive values indicate excess liquidity; negative values indicate potential funding needs.">ⓘ</span>
+          </div>
+          <div class="panel-content">
+            <div class="chart-container">
+              <canvas id="liquidityGapChart"></canvas>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Funding Concentration -->
+        <div class="panel grid-1-1">
+          <div class="panel-header">
+            <span>Funding Concentration</span>
+            <span class="info-icon" data-tooltip="Analysis of deposit concentration by customer type and size. High concentrations in specific segments increase liquidity risk.">ⓘ</span>
+          </div>
+          <div class="panel-content">
+            <div class="chart-container">
+              <canvas id="fundingConcentrationChart"></canvas>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Liquidity Sources -->
+        <div class="panel grid-1-3">
+          <div class="panel-header">
+            <span>Liquid Asset Composition</span>
+            <span class="info-icon" data-tooltip="Breakdown of high-quality liquid assets (HQLA) by type and quality level per regulatory definitions.">ⓘ</span>
+          </div>
+          <div class="panel-content">
+            <div class="chart-container">
+              <canvas id="liquidAssetsChart"></canvas>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Funding Availability -->
+        <div class="panel grid-1-3">
+          <div class="panel-header">
+            <span>Contingent Liquidity</span>
+            <span class="info-icon" data-tooltip="Available committed facilities, central bank eligible collateral, and other contingent funding sources.">ⓘ</span>
+          </div>
+          <div class="panel-content">
+            <div class="chart-container">
+              <canvas id="contingentLiquidityChart"></canvas>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Early Warning Indicators -->
+        <div class="panel grid-full">
+          <div class="panel-header">
+            <span>Liquidity Early Warning Indicators</span>
+            <span class="info-icon" data-tooltip="Key metrics monitored to identify potential liquidity issues before they occur. Status indicates if current values are within normal range, at watch level, or breach warning thresholds.">ⓘ</span>
+          </div>
+          <div class="panel-content">
+            <div style="height: 100%; overflow-y: auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Indicator</th>
+                    <th>Current</th>
+                    <th>Change</th>
+                    <th>Watch Level</th>
+                    <th>Warning Level</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="ewiTable">
+                  <tr>
+                    <td>Top 10 Depositor Concentration</td>
+                    <td>12.5%</td>
+                    <td>▲ +0.3pp</td>
+                    <td>15.0%</td>
+                    <td>20.0%</td>
+                    <td class="positive">Normal</td>
+                  </tr>
+                  <tr>
+                    <td>Deposit Pricing vs Market</td>
+                    <td>+15bps</td>
+                    <td>▲ +2bps</td>
+                    <td>+25bps</td>
+                    <td>+40bps</td>
+                    <td class="positive">Normal</td>
+                  </tr>
+                  <tr>
+                    <td>Wholesale Funding Rollover Rate</td>
+                    <td>92%</td>
+                    <td>▼ -3pp</td>
+                    <td>85%</td>
+                    <td>75%</td>
+                    <td class="positive">Normal</td>
+                  </tr>
+                  <tr>
+                    <td>Deposit Growth Rate (3M)</td>
+                    <td>2.1%</td>
+                    <td>▼ -0.5pp</td>
+                    <td>0%</td>
+                    <td>-3%</td>
+                    <td class="positive">Normal</td>
+                  </tr>
+                  <tr>
+                    <td>Retail Internet Banking Availability</td>
+                    <td>99.8%</td>
+                    <td>▼ -0.1pp</td>
+                    <td>99.5%</td>
+                    <td>99.0%</td>
+                    <td class="positive">Normal</td>
+                  </tr>
+                  <tr>
+                    <td>Unencumbered Asset Ratio</td>
+                    <td>28%</td>
+                    <td>◆ No change</td>
+                    <td>25%</td>
+                    <td>20%</td>
+                    <td class="positive">Normal</td>
+                  </tr>
+                  <tr>
+                    <td>Loan-to-Deposit Ratio</td>
+                    <td>88.9%</td>
+                    <td>▼ -0.3pp</td>
+                    <td>90%</td>
+                    <td>95%</td>
+                    <td class="positive">Normal</td>
+                  </tr>
+                  <tr>
+                    <td>Deposit Beta (Last Rate Change)</td>
+                    <td>0.45</td>
+                    <td>▲ +0.03</td>
+                    <td>0.50</td>
+                    <td>0.60</td>
+                    <td class="positive">Normal</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+<!-- Balance Sheet Tab View -->
+<div id="view-balance-sheet" class="tab-view">
+    <!-- Top summary metrics -->
+    <div class="panel grid-full">
+      <div class="panel-header">
+        <span>Balance Sheet Overview</span>
+        <span>as of 2025-03-25</span>
+      </div>
+      <div class="panel-content">
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-label">
+              Total Assets
+              <span class="info-icon" data-tooltip="Total assets of the bank including loans, securities, cash, and other assets.">ⓘ</span>
+            </div>
+            <div class="metric-value neutral">$125.0B</div>
+            <div class="trend">▲ +$1.2B</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">
+              Total Liabilities
+              <span class="info-icon" data-tooltip="Total liabilities of the bank including deposits, borrowings, and other liabilities.">ⓘ</span>
+            </div>
+            <div class="metric-value neutral">$115.0B</div>
+            <div class="trend">▲ +$1.0B</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">
+              Total Equity
+              <span class="info-icon" data-tooltip="Total equity of the bank representing shareholders' claim on assets.">ⓘ</span>
+            </div>
+            <div class="metric-value neutral">$10.0B</div>
+            <div class="trend">▲ +$0.2B</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">
+              Loan-to-Asset Ratio
+              <span class="info-icon" data-tooltip="Percentage of total assets allocated to loans. Higher ratios indicate more lending-focused operations.">ⓘ</span>
+            </div>
+            <div class="metric-value neutral">64.0%</div>
+            <div class="trend">▼ -0.2pp</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">
+              Loan-to-Deposit Ratio
+              <span class="info-icon" data-tooltip="Ratio of loans to deposits. Lower ratios indicate stronger liquidity positions.">ⓘ</span>
+            </div>
+            <div class="metric-value neutral">88.9%</div>
+            <div class="trend">▼ -0.3pp</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">
+              Equity Multiplier
+              <span class="info-icon" data-tooltip="Ratio of total assets to equity, indicating the bank's leverage.">ⓘ</span>
+            </div>
+            <div class="metric-value neutral">12.5x</div>
+            <div class="trend">◆ No change</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">
+              Interest Earning Assets %
+              <span class="info-icon" data-tooltip="Percentage of assets that generate interest income.">ⓘ</span>
+            </div>
+            <div class="metric-value positive">92.3%</div>
+            <div class="trend">▲ +0.1pp</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">
+              Avg. Earning Asset Yield
+              <span class="info-icon" data-tooltip="Average yield earned on interest-earning assets.">ⓘ</span>
+            </div>
+            <div class="metric-value positive">4.51%</div>
+            <div class="trend">▲ +0.05pp</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Economic Details Grid -->
+<div class="panel grid-full">
+    <div class="panel-header">
+      <span>Economic Details of Financial Instruments</span>
+      <span class="info-icon" data-tooltip="Detailed economic information about the bank's financial instruments, including notional values, fair values, and risk characteristics.">ⓘ</span>
+    </div>
+    <div class="panel-content">
+      <div style="margin-bottom: 10px;">
+        <select id="instrument-category-filter" onchange="filterInstruments()" class="filter-dropdown" style="padding: 5px; background-color: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 3px;">
+          <option value="all">All Categories</option>
+          <option value="loans">Loans</option>
+          <option value="securities">Securities</option>
+          <option value="deposits">Deposits</option>
+          <option value="borrowings">Borrowings</option>
+          <option value="derivatives">Derivatives</option>
+        </select>
+      </div>
+      <div style="height: calc(100% - 30px); overflow-y: auto;">
+        <table id="economic-details-table">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Instrument</th>
+              <th>Type</th>
+              <th>Notional Value</th>
+              <th>Fair Value</th>
+              <th>Rate/Yield</th>
+              <th>Maturity</th>
+              <th>Duration</th>
+              <th>Convexity</th>
+              <th>Hedge Status</th>
+            </tr>
+          </thead>
+          <tbody id="economic-details-body">
+            <!-- Will be populated by JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+    <!-- Asset Detail Grid -->
+    <div class="panel grid-1-1">
+      <div class="panel-header">
+        <span>Asset Detail</span>
+        <span class="info-icon" data-tooltip="Detailed breakdown of the bank's assets by category, showing balances, allocation percentages, average yields, and duration.">ⓘ</span>
+      </div>
+      <div class="panel-content">
+        <div style="height: 100%; overflow-y: auto;">
+          <table id="assetDetailTable">
+            <thead>
+              <tr>
+                <th>Asset Category</th>
+                <th>Balance</th>
+                <th>% of Total</th>
+                <th>Avg. Yield</th>
+                <th>Duration (Yrs)</th>
+                <th>MTM Change</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Will be populated by JavaScript -->
+            </tbody>
+            <tfoot>
+              <tr>
+                <td><strong>Total Assets</strong></td>
+                <td><strong>$125.0B</strong></td>
+                <td><strong>100.0%</strong></td>
+                <td><strong>4.51%</strong></td>
+                <td><strong>4.2</strong></td>
+                <td><strong>+$0.8B</strong></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Liability Detail Grid -->
+    <div class="panel grid-1-1">
+      <div class="panel-header">
+        <span>Liability & Equity Detail</span>
+        <span class="info-icon" data-tooltip="Detailed breakdown of the bank's liabilities and equity by category, showing balances, allocation percentages, average costs, and duration.">ⓘ</span>
+      </div>
+      <div class="panel-content">
+        <div style="height: 100%; overflow-y: auto;">
+          <table id="liabilityDetailTable">
+            <thead>
+              <tr>
+                <th>Liability Category</th>
+                <th>Balance</th>
+                <th>% of Total</th>
+                <th>Avg. Cost</th>
+                <th>Duration (Yrs)</th>
+                <th>MTM Change</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Will be populated by JavaScript -->
+            </tbody>
+            <tfoot>
+              <tr>
+                <td><strong>Total Liabilities & Equity</strong></td>
+                <td><strong>$125.0B</strong></td>
+                <td><strong>100.0%</strong></td>
+                <td><strong>2.15%</strong></td>
+                <td><strong>2.1</strong></td>
+                <td><strong>+$0.5B</strong></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Asset Quality Metrics -->
+    <div class="panel grid-1-1">
+      <div class="panel-header">
+        <span>Asset Quality Metrics</span>
+        <span class="info-icon" data-tooltip="Key metrics related to the quality of the bank's loan portfolio and other assets.">ⓘ</span>
+      </div>
+      <div class="panel-content">
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-label">
+              Non-Performing Loan Ratio
+              <span class="info-icon" data-tooltip="Percentage of the loan portfolio that is classified as non-performing (typically loans 90+ days past due).">ⓘ</span>
+            </div>
+            <div class="metric-value positive">0.65%</div>
+            <div class="trend">▼ -0.05pp</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">
+              Loan Loss Coverage Ratio
+              <span class="info-icon" data-tooltip="Ratio of loan loss reserves to non-performing loans. Higher ratios indicate better coverage for potential losses.">ⓘ</span>
+            </div>
+            <div class="metric-value positive">185%</div>
+            <div class="trend">▲ +5pp</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">
+              Risk-Weighted Assets
+              <span class="info-icon" data-tooltip="Total assets weighted by risk according to regulatory guidelines.">ⓘ</span>
+            </div>
+            <div class="metric-value neutral">$88.5B</div>
+            <div class="trend">▲ +$0.7B</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">
+              Net Charge-Off Rate
+              <span class="info-icon" data-tooltip="Annual rate of loans written off as losses, net of recoveries.">ⓘ</span>
+            </div>
+            <div class="metric-value positive">0.22%</div>
+            <div class="trend">▼ -0.03pp</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Historical Balance Sheet Trends -->
+    <div class="panel grid-full">
+      <div class="panel-header">
+        <span>Balance Sheet Growth Trends</span>
+        <span class="info-icon" data-tooltip="Historical trends showing the growth of key balance sheet items over time.">ⓘ</span>
+      </div>
+      <div class="panel-content">
+        <div class="chart-container">
+          <canvas id="balanceSheetTrendChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+      
+<!-- Stress Testing Tab View -->
+<div id="view-stress" class="tab-view">
+    <!-- Placeholder for Stress Testing tab content -->
+    <div class="panel grid-full">
+      <div class="panel-header">
+        <span>Stress Testing Analysis</span>
+      </div>
+      <div class="panel-content">
+        <div style="display: flex; justify-content: center; align-items: center; height: 200px;">
+          <h3>Stress Testing Tab Content</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+    
+    <footer class="footer">
+      <div>Retail Bank ALM Dashboard | Version 1.0</div>
+      <div>Last refreshed: 2025-03-25 10:30:45 | Next refresh: 2025-03-25 16:30:00</div>
+    </footer>
+  </div>
+  
+  <div class="tooltip" id="tooltip"></div>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.0.0/dist/chartjs-plugin-annotation.min.js"></script>
+  <script>
+
+    
+    // Initialize the default tab
+    window.onload = function() {
+      changeTab('overview');
+    };
+    
+
+    // Add this function call to the balance sheet initialization
+function initializeBalanceSheetContent() {
+  populateBalanceSheetTables();
+  initializeBalanceSheetTrend();
+  populateEconomicDetailsTable();
+}
+    // Function to initialize tab-specific charts when tab is activated
+    function changeTab(tabName) {
+  // Remove active class from all tabs and tab views
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  
+  document.querySelectorAll('.tab-view').forEach(view => {
+    view.classList.remove('active');
+  });
+  
+  // Add active class to selected tab and view
+  document.getElementById('tab-' + tabName).classList.add('active');
+  document.getElementById('view-' + tabName).classList.add('active');
+  
+  // Initialize any charts that might need it when tab becomes visible
+  if (tabName === 'irr') {
+    initializeIRRCharts();
+  } else if (tabName === 'liquidity') {
+    initializeLiquidityCharts();
+  } else if (tabName === 'balance-sheet') {
+    initializeBalanceSheetContent();
+  }
+  else if (tabName === 'stress') {
+    print('here')
+    initializeStressTestingTab();
+  }
+}
+    
+
+
+    // Sample ALM data
+    const almData = {
+      asOfDate: "2025-03-25",
+      
+      // Balance Sheet Summary
+      balanceSheet: {
+        totalAssets: 125000000000,
+        totalLiabilities: 115000000000,
+        equity: 10000000000,
+        
+        // Asset Breakdown
+        assets: {
+          loans: 80000000000,
+          securities: 30000000000,
+          cash: 10000000000,
+          otherAssets: 5000000000,
+          
+          // Loan Breakdown
+          loanBreakdown: {
+            mortgage: 45000000000,
+            commercial: 20000000000,
+            consumer: 10000000000,
+            other: 5000000000
+          }
+        },
+        
+        // Liability Breakdown
+        liabilities: {
+          deposits: 90000000000,
+          borrowings: 15000000000,
+          otherLiabilities: 10000000000,
+          
+          // Deposit Breakdown
+          depositBreakdown: {
+            demand: 35000000000,
+            savings: 30000000000,
+            timeDeposits: 25000000000
+          }
+        }
+      },
+      
+      // Liquidity Metrics
+      liquidity: {
+        lcr: 120, // Liquidity Coverage Ratio (%)
+        nsfr: 115, // Net Stable Funding Ratio (%)
+        liquidAssets: 25000000000,
+        liquidityGap30Days: 5000000000,
+        liquidityGap90Days: 2000000000,
+        liquidityGap1Year: -1000000000
+      },
+      
+      // Interest Rate Risk
+      interestRateRisk: {
+        netInterestIncome: 3500000000,
+        netInterestMargin: 2.85, // %
+        durationOfAssets: 4.2, // years
+        durationOfLiabilities: 2.1, // years
+        durationGap: 2.1, // years
+        economicValueOfEquity: 12000000000,
+        parallelShockImpact: { // Impact of +100bp parallel shift
+          eveDelta: -800000000, // Change in Economic Value of Equity
+          niiDelta: 150000000 // Change in Net Interest Income
+        }
+      },
+      
+      // Maturity Profiles (simplified, in millions)
+      maturityProfile: {
+        timeBuckets: ["0-1M", "1-3M", "3-6M", "6-12M", "1-2Y", "2-3Y", "3-5Y", "5-10Y", ">10Y"],
+        assets: [12000, 15000, 18000, 20000, 15000, 10000, 15000, 12000, 8000],
+        liabilities: [20000, 18000, 15000, 17000, 13000, 10000, 12000, 8000, 2000],
+        gap: [-8000, -3000, 3000, 3000, 2000, 0, 3000, 4000, 6000],
+        cumulativeGap: [-8000, -11000, -8000, -5000, -3000, -3000, 0, 4000, 10000]
+      },
+      
+      // Stress Test Scenarios
+      stressTests: {
+        scenarios: ["Base Case", "Rising Rates", "Falling Rates", "Flattening", "Steepening", "Liquidity Crisis"],
+        niiImpact: [0, 250, -180, 120, -100, -350], // in millions
+        eveImpact: [0, -1200, 800, -400, 300, -1500], // in millions
+        lcrImpact: [0, -5, 3, -2, 1, -25] // percentage points
+      },
+      
+      // Historical Trends (last 6 quarters)
+      trends: {
+        quarters: ["Q2 2023", "Q3 2023", "Q4 2023", "Q1 2024", "Q2 2024", "Q3 2024"],
+        nii: [800, 830, 860, 850, 880, 900], // in millions
+        nim: [2.7, 2.75, 2.8, 2.75, 2.8, 2.85], // %
+        lcr: [112, 115, 118, 116, 118, 120], // %
+        loans: [75000, 76500, 78000, 79000, 79500, 80000], // in millions
+        deposits: [84000, 85500, 87000, 88500, 89000, 90000] // in millions
+      }
+    };
+    
+    // Format large numbers for display
+    function formatCurrency(value) {
+      if (Math.abs(value) >= 1000000000) {
+        return '$' + (value / 1000000000).toFixed(1) + 'B';
+      } else if (Math.abs(value) >= 1000000) {
+        return '$' + (value / 1000000).toFixed(1) + 'M';
+      }
+      return '$' + value.toLocaleString();
+    }
+    
+    // Format percentage values
+    function formatPercent(value) {
+      return value.toFixed(2) + '%';
+    }
+    
+    // Tooltip functionality
+    const tooltip = document.getElementById('tooltip');
+    const infoIcons = document.querySelectorAll('.info-icon');
+    
+    infoIcons.forEach(icon => {
+      icon.addEventListener('mouseenter', (e) => {
+        tooltip.innerHTML = e.target.getAttribute('data-tooltip');
+        tooltip.style.display = 'block';
+        tooltip.style.left = e.pageX + 10 + 'px';
+        tooltip.style.top = e.pageY + 10 + 'px';
+      });
+      
+      icon.addEventListener('mouseleave', () => {
+        tooltip.style.display = 'none';
+      });
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+      if (tooltip.style.display === 'block') {
+        tooltip.style.left = e.pageX + 10 + 'px';
+        tooltip.style.top = e.pageY + 10 + 'px';
+      }
+    });
+    
+    // Chart colors
+    const chartColors = {
+      blue: '#2d7bed',
+      lightBlue: '#4671d5',
+      green: '#00c281',
+      red: '#ff3d71',
+      orange: '#ffaa00',
+      purple: '#a855f7',
+      yellow: '#ffd700',
+      gray: '#a0a0a0',
+      backgroundColors: [
+        'rgba(45, 123, 237, 0.7)',
+        'rgba(0, 194, 129, 0.7)',
+        'rgba(255, 61, 113, 0.7)',
+        'rgba(255, 170, 0, 0.7)',
+        'rgba(168, 85, 247, 0.7)'
+      ]
+    };
+    
+    // Chart.js global configurations
+    Chart.defaults.color = '#a0a0a0';
+    Chart.defaults.font.family = 'Consolas, Monaco, monospace';
+    Chart.defaults.font.size = 10;
+    Chart.defaults.plugins.title.display = false;
+    Chart.defaults.plugins.legend.position = 'bottom';
+    Chart.defaults.plugins.legend.labels.padding = 10;
+    Chart.defaults.plugins.tooltip.backgroundColor = '#1a2235';
+    Chart.defaults.plugins.tooltip.borderColor = '#2a3548';
+    Chart.defaults.plugins.tooltip.borderWidth = 1;
+    Chart.defaults.plugins.tooltip.padding = 10;
+    Chart.defaults.scale.grid.color = '#2a3548';
+    Chart.defaults.scale.ticks.color = '#a0a0a0';
+    
+    // Maturity Gap Chart
+    const maturityGapCtx = document.getElementById('maturityGapChart').getContext('2d');
+    const maturityGapChart = new Chart(maturityGapCtx, {
+      type: 'bar',
+      data: {
+        labels: almData.maturityProfile.timeBuckets,
+        datasets: [
+          {
+            label: 'Assets',
+            data: almData.maturityProfile.assets,
+            backgroundColor: chartColors.backgroundColors[0],
+            stack: 'stack1'
+          },
+          {
+            label: 'Liabilities',
+            data: almData.maturityProfile.liabilities.map(val => -val), // Negative for visual stacking
+            backgroundColor: chartColors.backgroundColors[2],
+            stack: 'stack1'
+          },
+          {
+            label: 'Gap',
+            data: almData.maturityProfile.gap,
+            type: 'line',
+            borderColor: chartColors.yellow,
+            borderWidth: 2,
+            fill: false,
+            tension: 0.1,
+            pointBackgroundColor: chartColors.yellow
+          },
+          {
+            label: 'Cumulative Gap',
+            data: almData.maturityProfile.cumulativeGap,
+            type: 'line',
+            borderColor: chartColors.green,
+            borderWidth: 2,
+            fill: false,
+            tension: 0.1,
+            pointBackgroundColor: chartColors.green
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.dataset.label || '';
+                const value = context.raw;
+                return label + ': ' + formatCurrency(Math.abs(value));
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Maturity Buckets'
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'Amount (millions)'
+            },
+            ticks: {
+              callback: function(value) {
+                return formatCurrency(value);
+              }
+            }
+          }
+        }
+      }
+    });
+    
+    // Interest Rate Risk Chart
+    const irrCtx = document.getElementById('interestRateRiskChart').getContext('2d');
+    const irrChart = new Chart(irrCtx, {
+      type: 'bar',
+      data: {
+        labels: almData.stressTests.scenarios,
+        datasets: [
+          {
+            label: 'NII Impact',
+            data: almData.stressTests.niiImpact,
+            backgroundColor: chartColors.backgroundColors[0],
+            yAxisID: 'y'
+          },
+          {
+            label: 'EVE Impact',
+            data: almData.stressTests.eveImpact,
+            backgroundColor: chartColors.backgroundColors[2],
+            yAxisID: 'y'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.dataset.label || '';
+                const value = context.raw;
+                return label + ': ' + formatCurrency(value);
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Interest Rate Scenarios'
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'Impact ($ millions)'
+            },
+            ticks: {
+              callback: function(value) {
+                return formatCurrency(value);
+              }
+            }
+          }
+        }
+      }
+    });
+    
+    // Asset Breakdown Chart
+    const assetCtx = document.getElementById('assetBreakdownChart').getContext('2d');
+    const assetChart = new Chart(assetCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Loans', 'Securities', 'Cash', 'Other Assets'],
+        datasets: [{
+          data: [
+            almData.balanceSheet.assets.loans,
+            almData.balanceSheet.assets.securities,
+            almData.balanceSheet.assets.cash,
+            almData.balanceSheet.assets.otherAssets
+          ],
+          backgroundColor: chartColors.backgroundColors
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const value = context.raw;
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = ((value / total) * 100).toFixed(1);
+                return label + ': ' + formatCurrency(value) + ' (' + percentage + '%)';
+              }
+            }
+          }
+        }
+      }
+    });
+    
+    // Liability Breakdown Chart
+    const liabilityCtx = document.getElementById('liabilityBreakdownChart').getContext('2d');
+    const liabilityChart = new Chart(liabilityCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Deposits', 'Borrowings', 'Other Liabilities'],
+        datasets: [{
+          data: [
+            almData.balanceSheet.liabilities.deposits,
+            almData.balanceSheet.liabilities.borrowings,
+            almData.balanceSheet.liabilities.otherLiabilities
+          ],
+          backgroundColor: chartColors.backgroundColors
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const value = context.raw;
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = ((value / total) * 100).toFixed(1);
+                return label + ': ' + formatCurrency(value) + ' (' + percentage + '%)';
+              }
+            }
+          }
+        }
+      }
+    });
+    
+    // Historical Trends Chart
+    const trendCtx = document.getElementById('trendChart').getContext('2d');
+    const trendChart = new Chart(trendCtx, {
+      type: 'line',
+      data: {
+        labels: almData.trends.quarters,
+        datasets: [
+          {
+            label: 'Net Interest Margin (%)',
+            data: almData.trends.nim,
+            borderColor: chartColors.green,
+            backgroundColor: 'rgba(0, 194, 129, 0.1)',
+            fill: true,
+            yAxisID: 'y',
+            tension: 0.1
+          },
+          {
+            label: 'Liquidity Coverage Ratio (%)',
+            data: almData.trends.lcr,
+            borderColor: chartColors.blue,
+            backgroundColor: 'rgba(45, 123, 237, 0.1)',
+            fill: true,
+            yAxisID: 'y1',
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.dataset.label || '';
+                const value = context.raw;
+                return label + ': ' + value;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Quarter'
+            }
+          },
+          y: {
+            type: 'linear',
+            display: true,
+            position: 'left',
+            title: {
+              display: true,
+              text: 'Net Interest Margin (%)'
+            },
+            min: 2.0,
+            max: 3.5
+          },
+          y1: {
+            type: 'linear',
+            display: true,
+            position: 'right',
+            title: {
+              display: true,
+              text: 'LCR (%)'
+            },
+            min: 100,
+            max: 130,
+            grid: {
+              drawOnChartArea: false
+            }
+          }
+        }
+      }
+    });
+    
+    // Populate stress test table
+    function populateStressTestTable() {
+      const tableBody = document.getElementById('stressTestTable');
+      
+      almData.stressTests.scenarios.forEach((scenario, index) => {
+        const niiImpact = almData.stressTests.niiImpact[index];
+        const eveImpact = almData.stressTests.eveImpact[index];
+        const lcrImpact = almData.stressTests.lcrImpact[index];
+        
+        // Determine status based on impacts
+        let status, statusClass;
+        if (index === 0) {
+          status = "Baseline";
+          statusClass = "neutral";
+        } else if (niiImpact < -300 || eveImpact < -1000 || lcrImpact < -20) {
+          status = "Critical";
+          statusClass = "negative";
+        } else if (niiImpact < -100 || eveImpact < -500 || lcrImpact < -10) {
+          status = "Warning";
+          statusClass = "orange";
+        } else {
+          status = "Acceptable";
+          statusClass = "positive";
+        }
+        
+        const row = document.createElement('tr');
+        
+        const niiClass = niiImpact > 0 ? 'positive' : niiImpact < 0 ? 'negative' : 'neutral';
+        const eveClass = eveImpact > 0 ? 'positive' : eveImpact < 0 ? 'negative' : 'neutral';
+        const lcrClass = lcrImpact > 0 ? 'positive' : lcrImpact < 0 ? 'negative' : 'neutral';
+        
+        row.innerHTML = `
+          <td>${scenario}</td>
+          <td class="${niiClass}">${niiImpact > 0 ? '+' : ''}${formatCurrency(niiImpact)}</td>
+          <td class="${eveClass}">${eveImpact > 0 ? '+' : ''}${formatCurrency(eveImpact)}</td>
+          <td class="${lcrClass}">${lcrImpact > 0 ? '+' : ''}${lcrImpact}pp</td>
+          <td class="${statusClass}">${status}</td>
+        `;
+        
+        tableBody.appendChild(row);
+      });
+    }
+    
+          // Call function to populate table
+    populateStressTestTable();
+    
+    // Liquidity tab charts initialization
+    function initializeLiquidityCharts() {
+      if (document.getElementById('liquidityGapChart').chart) {
+        return; // Already initialized
+      }
+      
+      // Minimal liquidity data
+      const liquidityData = {
+        // Liquidity Gap Analysis
+        liquidityGap: {
+          timeBuckets: ['1D', '2-7D', '8-30D', '31-90D', '91-180D', '181-365D', '>1Y'],
+          inflows: [5.8, 8.2, 12.5, 18.3, 15.8, 22.1, 38.5], // in billions
+          outflows: [8.2, 10.5, 9.8, 14.1, 18.3, 20.5, 32.2], // in billions
+          netPosition: [-2.4, -2.3, 2.7, 4.2, -2.5, 1.6, 6.3], // in billions
+          cumulative: [-2.4, -4.7, -2.0, 2.2, -0.3, 1.3, 7.6] // in billions
+        },
+        
+        // Funding Concentration
+        fundingConcentration: {
+          categories: ['Retail', 'SME', 'Corporate', 'Financial', 'Public Sector', 'Wholesale'],
+          percentages: [35, 15, 25, 10, 8, 7],
+          stability: [92, 85, 70, 65, 95, 60] // % expected to remain under stress
+        },
+        
+        // Liquid Assets
+        liquidAssets: {
+          categories: ['Level 1 Cash', 'Level 1 Securities', 'Level 2A', 'Level 2B', 'Non-HQLA'],
+          amounts: [8.5, 10.2, 4.2, 2.1, 5.0] // in billions
+        },
+        
+        // Contingent Liquidity
+        contingentLiquidity: {
+          categories: ['Central Bank Facilities', 'Committed Credit Lines', 'Marketable Securities', 'Unencumbered Loans'],
+          amounts: [12.0, 5.5, 8.0, 15.0] // in billions
+        }
+      };
+      
+      // Liquidity Gap Chart
+      const liquidityGapCtx = document.getElementById('liquidityGapChart').getContext('2d');
+      document.getElementById('liquidityGapChart').chart = new Chart(liquidityGapCtx, {
+        type: 'bar',
+        data: {
+          labels: liquidityData.liquidityGap.timeBuckets,
+          datasets: [
+            {
+              label: 'Inflows',
+              data: liquidityData.liquidityGap.inflows,
+              backgroundColor: chartColors.backgroundColors[1],
+              stack: 'stack1'
+            },
+            {
+              label: 'Outflows',
+              data: liquidityData.liquidityGap.outflows.map(val => -val), // Negative for visual stacking
+              backgroundColor: chartColors.backgroundColors[2],
+              stack: 'stack1'
+            },
+            {
+              label: 'Net Position',
+              data: liquidityData.liquidityGap.netPosition,
+              type: 'line',
+              borderColor: chartColors.yellow,
+              borderWidth: 2,
+              fill: false,
+              tension: 0.1,
+              pointBackgroundColor: chartColors.yellow
+            },
+            {
+              label: 'Cumulative',
+              data: liquidityData.liquidityGap.cumulative,
+              type: 'line',
+              borderColor: chartColors.blue,
+              borderWidth: 2,
+              fill: false,
+              tension: 0.1,
+              pointBackgroundColor: chartColors.blue
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const label = context.dataset.label || '';
+                  const value = context.raw;
+                  return label + ': ' + formatCurrency(Math.abs(value)) + 'B';
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'Time Buckets'
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Amount ($ billions)'
+              },
+              ticks: {
+                callback: function(value) {
+                  return formatCurrency(value) + 'B';
+                }
+              }
+            }
+          }
+        }
+      });
+      
+      // Funding Concentration Chart
+      const fundingConcentrationCtx = document.getElementById('fundingConcentrationChart').getContext('2d');
+      document.getElementById('fundingConcentrationChart').chart = new Chart(fundingConcentrationCtx, {
+        type: 'bar',
+        data: {
+          labels: liquidityData.fundingConcentration.categories,
+          datasets: [
+            {
+              label: 'Funding Percentage',
+              data: liquidityData.fundingConcentration.percentages,
+              backgroundColor: chartColors.backgroundColors,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Stability Score',
+              data: liquidityData.fundingConcentration.stability,
+              type: 'line',
+              borderColor: chartColors.green,
+              backgroundColor: 'rgba(0, 0, 0, 0)',
+              yAxisID: 'y1',
+              tension: 0.1,
+              pointBackgroundColor: chartColors.green
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'Customer Segment'
+              }
+            },
+            y: {
+              type: 'linear',
+              position: 'left',
+              title: {
+                display: true,
+                text: 'Funding %'
+              },
+              ticks: {
+                callback: function(value) {
+                  return value + '%';
+                }
+              }
+            },
+            y1: {
+              type: 'linear',
+              position: 'right',
+              title: {
+                display: true,
+                text: 'Stability %'
+              },
+              min: 0,
+              max: 100,
+              ticks: {
+                callback: function(value) {
+                  return value + '%';
+                }
+              },
+              grid: {
+                drawOnChartArea: false
+              }
+            }
+          }
+        }
+      });
+      
+      // Liquid Assets Chart
+      const liquidAssetsCtx = document.getElementById('liquidAssetsChart').getContext('2d');
+      document.getElementById('liquidAssetsChart').chart = new Chart(liquidAssetsCtx, {
+        type: 'doughnut',
+        data: {
+          labels: liquidityData.liquidAssets.categories,
+          datasets: [{
+            data: liquidityData.liquidAssets.amounts,
+            backgroundColor: chartColors.backgroundColors
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const label = context.label || '';
+                  const value = context.raw;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = ((value / total) * 100).toFixed(1);
+                  return label + ': ' + formatCurrency(value) + 'B (' + percentage + '%)';
+                }
+              }
+            }
+          }
+        }
+      });
+      
+      // Contingent Liquidity Chart
+      const contingentLiquidityCtx = document.getElementById('contingentLiquidityChart').getContext('2d');
+      document.getElementById('contingentLiquidityChart').chart = new Chart(contingentLiquidityCtx, {
+        type: 'doughnut',
+        data: {
+          labels: liquidityData.contingentLiquidity.categories,
+          datasets: [{
+            data: liquidityData.contingentLiquidity.amounts,
+            backgroundColor: chartColors.backgroundColors
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const label = context.label || '';
+                  const value = context.raw;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = ((value / total) * 100).toFixed(1);
+                  return label + ': ' + formatCurrency(value) + 'B (' + percentage + '%)';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    // Update date and time
+    function updateDateTime() {
+      const now = new Date();
+      const dateTimeStr = now.toISOString().slice(0, 10) + ' ' + 
+                          now.toTimeString().slice(0, 8);
+      document.getElementById('current-date-time').textContent = dateTimeStr;
+    }
+    
+    // Call once on load
+    updateDateTime();
+    
+    // Update time every minute
+    setInterval(updateDateTime, 60000);
+    
+    // Tab initialization functions
+    function initializeIRRCharts() {
+      if (document.getElementById('yieldCurveChart').chart) {
+        return; // Already initialized
+      }
+      
+      // Sample data for IRR charts
+      const irrData = {
+        // Yield Curve Data
+        yieldCurve: {
+          tenors: ['1M', '3M', '6M', '1Y', '2Y', '3Y', '5Y', '7Y', '10Y', '20Y', '30Y'],
+          current: [3.20, 3.45, 3.55, 3.65, 3.85, 3.95, 4.10, 4.20, 4.25, 4.35, 4.40],
+          previous: [3.00, 3.25, 3.35, 3.50, 3.70, 3.85, 4.00, 4.15, 4.20, 4.30, 4.35],
+          forecast: [3.40, 3.60, 3.75, 3.90, 4.10, 4.20, 4.30, 4.35, 4.40, 4.45, 4.50]
+        },
+        
+        // Product Sensitivity
+        productSensitivity: {
+          products: ['Residential Mortgages', 'Commercial Loans', 'Consumer Loans', 'Demand Deposits', 'Savings', 'Time Deposits'],
+          niiSensitivity: [2.8, 1.5, 0.9, -1.2, -0.8, -0.5], // % change in NII for +100bp
+          eveSensitivity: [-4.5, -2.0, -1.2, 2.5, 1.5, 0.8] // % change in EVE for +100bp
+        },
+        
+        // IRRBB Metrics
+        irrbbMetrics: {
+          metrics: ['EVE/Capital (+200bp)', 'EVE/Capital (-200bp)', 'NII at Risk (1Y)', 'Duration Gap'],
+          values: [12.5, 10.2, 8.3, 2.1],
+          internalLimits: [15, 12, 10, 3],
+          regulatoryLimits: [20, 15, 15, 5]
+        },
+        
+        // Earnings at Risk
+        earAnalysis: {
+          scenarios: ['-200bp', '-100bp', '-50bp', 'Base', '+50bp', '+100bp', '+200bp'],
+          earValues: [-280, -180, -90, 0, 85, 150, 240] // in millions
+        }
+      };
+      
+      // Yield Curve Chart
+      const yieldCurveCtx = document.getElementById('yieldCurveChart').getContext('2d');
+      document.getElementById('yieldCurveChart').chart = new Chart(yieldCurveCtx, {
+        type: 'line',
+        data: {
+          labels: irrData.yieldCurve.tenors,
+          datasets: [
+            {
+              label: 'Current',
+              data: irrData.yieldCurve.current,
+              borderColor: chartColors.blue,
+              backgroundColor: 'rgba(45, 123, 237, 0.1)',
+              fill: false,
+              tension: 0.1
+            },
+            {
+              label: 'Previous',
+              data: irrData.yieldCurve.previous,
+              borderColor: chartColors.gray,
+              backgroundColor: 'rgba(160, 160, 160, 0.1)',
+              fill: false,
+              borderDash: [5, 5],
+              tension: 0.1
+            },
+            {
+              label: 'Forecast',
+              data: irrData.yieldCurve.forecast,
+              borderColor: chartColors.orange,
+              backgroundColor: 'rgba(255, 170, 0, 0.1)',
+              fill: false,
+              borderDash: [3, 3],
+              tension: 0.1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'Tenor'
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Yield (%)'
+              },
+              ticks: {
+                callback: function(value) {
+                  return value.toFixed(2) + '%';
+                }
+              }
+            }
+          }
+        }
+      });
+      
+      // Product Sensitivity Chart
+      const productSensitivityCtx = document.getElementById('productSensitivityChart').getContext('2d');
+      document.getElementById('productSensitivityChart').chart = new Chart(productSensitivityCtx, {
+        type: 'bar',
+        data: {
+          labels: irrData.productSensitivity.products,
+          datasets: [
+            {
+              label: 'NII Sensitivity (+100bp)',
+              data: irrData.productSensitivity.niiSensitivity,
+              backgroundColor: chartColors.backgroundColors[0],
+              yAxisID: 'y'
+            },
+            {
+              label: 'EVE Sensitivity (+100bp)',
+              data: irrData.productSensitivity.eveSensitivity,
+              backgroundColor: chartColors.backgroundColors[2],
+              yAxisID: 'y'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'Product Category'
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Sensitivity (%)'
+              },
+              ticks: {
+                callback: function(value) {
+                  return value.toFixed(1) + '%';
+                }
+              }
+            }
+          }
+        }
+      });
+      
+      // IRRBB Metrics Chart
+      const irrbbMetricsCtx = document.getElementById('irrbbMetricsChart').getContext('2d');
+      document.getElementById('irrbbMetricsChart').chart = new Chart(irrbbMetricsCtx, {
+        type: 'bar',
+        data: {
+          labels: irrData.irrbbMetrics.metrics,
+          datasets: [
+            {
+              label: 'Current Value',
+              data: irrData.irrbbMetrics.values,
+              backgroundColor: chartColors.backgroundColors[0],
+              order: 1
+            },
+            {
+              label: 'Internal Limit',
+              data: irrData.irrbbMetrics.internalLimits,
+              backgroundColor: 'rgba(0, 0, 0, 0)',
+              borderColor: chartColors.orange,
+              borderWidth: 2,
+              type: 'line',
+              order: 0
+            },
+            {
+              label: 'Regulatory Limit',
+              data: irrData.irrbbMetrics.regulatoryLimits,
+              backgroundColor: 'rgba(0, 0, 0, 0)',
+              borderColor: chartColors.red,
+              borderWidth: 2,
+              borderDash: [5, 5],
+              type: 'line',
+              order: 0
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'IRRBB Metric'
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Value (%)'
+              },
+              ticks: {
+                callback: function(value) {
+                  return value.toFixed(1) + (value === 2.1 ? ' yrs' : '%');
+                }
+              }
+            }
+          }
+        }
+      });
+      
+      // Earnings at Risk Analysis Chart
+      const earAnalysisCtx = document.getElementById('earAnalysisChart').getContext('2d');
+      document.getElementById('earAnalysisChart').chart = new Chart(earAnalysisCtx, {
+        type: 'bar',
+        data: {
+          labels: irrData.earAnalysis.scenarios,
+          datasets: [
+            {
+              label: 'Earnings at Risk ($ millions)',
+              data: irrData.earAnalysis.earValues,
+              backgroundColor: irrData.earAnalysis.earValues.map(value => 
+                value > 0 ? chartColors.backgroundColors[1] : chartColors.backgroundColors[2]
+              )
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'Interest Rate Scenario'
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Change in Earnings ($ millions)'
+              },
+              ticks: {
+                callback: function(value) {
+                  return value > 0 ? '+' + value : value;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+
+    // Extended balance sheet data
+const extendedBalanceSheetData = {
+  assets: [
+    {
+      category: "Cash & Due from Banks",
+      balance: 10000000000,
+      yield: 2.15,
+      duration: 0.1,
+      mtmChange: 50000000
+    },
+    // Copy the rest of the assets array...
+  ],
+  
+  liabilities: [
+    {
+      category: "Demand Deposits",
+      balance: 35000000000,
+      cost: 0.75,
+      duration: 0.5,
+      mtmChange: 40000000
+    },
+    // Copy the rest of the liabilities array...
+  ]
+};
+
+// Function to populate balance sheet tables
+function populateBalanceSheetTables() {
+  // Copy the entire function...
+}
+
+// Initialize Balance Sheet Trend Chart
+function initializeBalanceSheetTrend() {
+  // Copy the entire function...
+}
+
+const economicDetailsData = [
+  // ASSETS - Loans
+  {
+    category: "Asset",
+    instrument: "Fixed Rate Residential Mortgages",
+    type: "loans",
+    notional: 28000000000,
+    fairValue: 27500000000,
+    rate: 4.35,
+    maturity: "15.3 years",
+    duration: 5.8,
+    convexity: 0.42,
+    hedgeStatus: "Partially Hedged"
+  },
+  {
+    category: "Asset",
+    instrument: "Adjustable Rate Residential Mortgages",
+    type: "loans",
+    notional: 17000000000,
+    fairValue: 17200000000,
+    rate: "SOFR+2.25%",
+    maturity: "18.5 years",
+    duration: 2.1,
+    convexity: 0.18,
+    hedgeStatus: "Unhedged"
+  },
+  {
+    category: "Asset",
+    instrument: "Commercial Real Estate Loans",
+    type: "loans",
+    notional: 12500000000,
+    fairValue: 12300000000,
+    rate: 5.15,
+    maturity: "7.5 years",
+    duration: 3.8,
+    convexity: 0.25,
+    hedgeStatus: "Partially Hedged"
+  },
+  {
+    category: "Asset",
+    instrument: "Commercial & Industrial Loans",
+    type: "loans",
+    notional: 7500000000,
+    fairValue: 7450000000,
+    rate: 5.45,
+    maturity: "4.2 years",
+    duration: 2.5,
+    convexity: 0.15,
+    hedgeStatus: "Unhedged"
+  },
+  {
+    category: "Asset",
+    instrument: "Consumer Loans - Auto",
+    type: "loans",
+    notional: 6000000000,
+    fairValue: 5950000000,
+    rate: 6.25,
+    maturity: "3.5 years",
+    duration: 1.8,
+    convexity: 0.08,
+    hedgeStatus: "Unhedged"
+  },
+  {
+    category: "Asset",
+    instrument: "Consumer Loans - Personal",
+    type: "loans",
+    notional: 4000000000,
+    fairValue: 3900000000,
+    rate: 7.15,
+    maturity: "2.8 years",
+    duration: 1.5,
+    convexity: 0.05,
+    hedgeStatus: "Unhedged"
+  },
+  
+  // ASSETS - Securities
+  {
+    category: "Asset",
+    instrument: "US Treasury Securities",
+    type: "securities",
+    notional: 10000000000,
+    fairValue: 9800000000,
+    rate: 3.45,
+    maturity: "5.2 years",
+    duration: 4.8,
+    convexity: 0.35,
+    hedgeStatus: "Unhedged"
+  },
+  {
+    category: "Asset",
+    instrument: "Agency MBS",
+    type: "securities",
+    notional: 8000000000,
+    fairValue: 7850000000,
+    rate: 3.85,
+    maturity: "7.5 years",
+    duration: 5.2,
+    convexity: 0.42,
+    hedgeStatus: "Partially Hedged"
+  },
+  {
+    category: "Asset",
+    instrument: "Municipal Bonds",
+    type: "securities",
+    notional: 5000000000,
+    fairValue: 4950000000,
+    rate: 3.75,
+    maturity: "8.5 years",
+    duration: 6.8,
+    convexity: 0.55,
+    hedgeStatus: "Unhedged"
+  },
+  {
+    category: "Asset",
+    instrument: "Corporate Bonds - Investment Grade",
+    type: "securities",
+    notional: 4000000000,
+    fairValue: 3950000000,
+    rate: 4.55,
+    maturity: "6.8 years",
+    duration: 5.5,
+    convexity: 0.48,
+    hedgeStatus: "Unhedged"
+  },
+  {
+    category: "Asset",
+    instrument: "Corporate Bonds - High Yield",
+    type: "securities",
+    notional: 2000000000,
+    fairValue: 1980000000,
+    rate: 6.25,
+    maturity: "5.3 years",
+    duration: 4.2,
+    convexity: 0.38,
+    hedgeStatus: "Unhedged"
+  },
+  {
+    category: "Asset",
+    instrument: "Asset-Backed Securities",
+    type: "securities",
+    notional: 4000000000,
+    fairValue: 3920000000,
+    rate: 4.35,
+    maturity: "4.8 years",
+    duration: 3.2,
+    convexity: 0.28,
+    hedgeStatus: "Unhedged"
+  },
+  
+  // LIABILITIES - Deposits
+  {
+    category: "Liability",
+    instrument: "Non-interest Checking Deposits",
+    type: "deposits",
+    notional: 15000000000,
+    fairValue: 15000000000,
+    rate: 0.00,
+    maturity: "0.3 years",
+    duration: 0.3,
+    convexity: 0.01,
+    hedgeStatus: "N/A"
+  },
+  {
+    category: "Liability",
+    instrument: "Interest Checking Deposits",
+    type: "deposits",
+    notional: 20000000000,
+    fairValue: 20000000000,
+    rate: 0.85,
+    maturity: "0.8 years",
+    duration: 0.7,
+    convexity: 0.02,
+    hedgeStatus: "N/A"
+  },
+  {
+    category: "Liability",
+    instrument: "Savings Deposits",
+    type: "deposits",
+    notional: 30000000000,
+    fairValue: 30000000000,
+    rate: 1.85,
+    maturity: "1.2 years",
+    duration: 1.1,
+    convexity: 0.03,
+    hedgeStatus: "N/A"
+  },
+  {
+    category: "Liability",
+    instrument: "Money Market Accounts",
+    type: "deposits",
+    notional: 15000000000,
+    fairValue: 15000000000,
+    rate: 2.25,
+    maturity: "0.7 years",
+    duration: 0.6,
+    convexity: 0.02,
+    hedgeStatus: "N/A"
+  },
+  {
+    category: "Liability",
+    instrument: "CDs < 1 Year",
+    type: "deposits",
+    notional: 5000000000,
+    fairValue: 5010000000,
+    rate: 3.15,
+    maturity: "0.5 years",
+    duration: 0.5,
+    convexity: 0.01,
+    hedgeStatus: "N/A"
+  },
+  {
+    category: "Liability",
+    instrument: "CDs 1-3 Years",
+    type: "deposits",
+    notional: 3000000000,
+    fairValue: 3050000000,
+    rate: 3.45,
+    maturity: "1.8 years",
+    duration: 1.7,
+    convexity: 0.05,
+    hedgeStatus: "N/A"
+  },
+  {
+    category: "Liability",
+    instrument: "CDs 3-5 Years",
+    type: "deposits",
+    notional: 2000000000,
+    fairValue: 2080000000,
+    rate: 3.65,
+    maturity: "3.8 years",
+    duration: 3.5,
+    convexity: 0.18,
+    hedgeStatus: "N/A"
+  },
+  
+  // LIABILITIES - Borrowings
+  {
+    category: "Liability",
+    instrument: "Federal Funds Purchased",
+    type: "borrowings",
+    notional: 2000000000,
+    fairValue: 2000000000,
+    rate: 3.25,
+    maturity: "0.1 years",
+    duration: 0.1,
+    convexity: 0.00,
+    hedgeStatus: "N/A"
+  },
+  {
+    category: "Liability",
+    instrument: "Repurchase Agreements",
+    type: "borrowings",
+    notional: 3000000000,
+    fairValue: 3000000000,
+    rate: 3.35,
+    maturity: "0.3 years",
+    duration: 0.3,
+    convexity: 0.01,
+    hedgeStatus: "N/A"
+  },
+  {
+    category: "Liability",
+    instrument: "FHLB Advances < 1 Year",
+    type: "borrowings",
+    notional: 2500000000,
+    fairValue: 2510000000,
+    rate: 3.55,
+    maturity: "0.7 years",
+    duration: 0.7,
+    convexity: 0.02,
+    hedgeStatus: "N/A"
+  },
+  {
+    category: "Liability",
+    instrument: "FHLB Advances 1-5 Years",
+    type: "borrowings",
+    notional: 4000000000,
+    fairValue: 4050000000,
+    rate: 3.85,
+    maturity: "3.2 years",
+    duration: 3.0,
+    convexity: 0.15,
+    hedgeStatus: "Partially Hedged"
+  },
+  {
+    category: "Liability",
+    instrument: "FHLB Advances > 5 Years",
+    type: "borrowings",
+    notional: 1500000000,
+    fairValue: 1580000000,
+    rate: 4.15,
+    maturity: "7.5 years",
+    duration: 6.2,
+    convexity: 0.58,
+    hedgeStatus: "Fully Hedged"
+  },
+  {
+    category: "Liability",
+    instrument: "Subordinated Debt",
+    type: "borrowings",
+    notional: 2000000000,
+    fairValue: 1950000000,
+    rate: 5.25,
+    maturity: "8.5 years",
+    duration: 6.8,
+    convexity: 0.52,
+    hedgeStatus: "Partially Hedged"
+  },
+  
+  // Derivatives
+  {
+    category: "Derivative",
+    instrument: "Interest Rate Swaps - Receive Fixed",
+    type: "derivatives",
+    notional: 15000000000,
+    fairValue: 250000000,
+    rate: "Receive 3.85%, Pay SOFR",
+    maturity: "5.2 years",
+    duration: 4.8,
+    convexity: 0.35,
+    hedgeStatus: "Hedging Instrument"
+  },
+  {
+    category: "Derivative",
+    instrument: "Interest Rate Swaps - Pay Fixed",
+    type: "derivatives",
+    notional: 8000000000,
+    fairValue: -120000000,
+    rate: "Pay 4.15%, Receive SOFR",
+    maturity: "4.5 years",
+    duration: 4.2,
+    convexity: 0.32,
+    hedgeStatus: "Hedging Instrument"
+  },
+  {
+    category: "Derivative",
+    instrument: "Interest Rate Caps",
+    type: "derivatives",
+    notional: 5000000000,
+    fairValue: 85000000,
+    rate: "Strike 5.00%",
+    maturity: "3.0 years",
+    duration: 0.8,
+    convexity: 0.05,
+    hedgeStatus: "Hedging Instrument"
+  },
+  {
+    category: "Derivative",
+    instrument: "Interest Rate Floors",
+    type: "derivatives",
+    notional: 3000000000,
+    fairValue: 65000000,
+    rate: "Strike 2.50%",
+    maturity: "2.5 years",
+    duration: 0.7,
+    convexity: 0.04,
+    hedgeStatus: "Hedging Instrument"
+  },
+  {
+    category: "Derivative",
+    instrument: "Cross-Currency Swaps",
+    type: "derivatives",
+    notional: 2000000000,
+    fairValue: 35000000,
+    rate: "USD/EUR",
+    maturity: "4.2 years",
+    duration: 3.9,
+    convexity: 0.28,
+    hedgeStatus: "Hedging Instrument"
+  }
+];
+
+function populateEconomicDetailsTable(filter = 'all') {
+  const tableBody = document.getElementById('economic-details-body');
+  
+  if (!tableBody) return; // Table not found
+  
+  // Clear existing rows
+  tableBody.innerHTML = '';
+  
+  // Filter and populate table
+  economicDetailsData
+    .filter(item => filter === 'all' || item.type === filter)
+    .forEach(item => {
+      const row = document.createElement('tr');
+      
+      // Determine category class for styling
+      let categoryClass = 'neutral';
+      if (item.category === 'Asset') categoryClass = 'positive';
+      if (item.category === 'Liability') categoryClass = 'negative';
+      if (item.category === 'Derivative') categoryClass = 'orange';
+      
+      // Format fair value with sign for derivatives
+      const fairValueFormatted = item.category === 'Derivative' 
+        ? (item.fairValue > 0 ? '+' : '') + formatCurrency(item.fairValue) 
+        : formatCurrency(item.fairValue);
+      
+      // Build row
+      row.innerHTML = `
+        <td class="${categoryClass}">${item.category}</td>
+        <td>${item.instrument}</td>
+        <td>${capitalizeFirstLetter(item.type)}</td>
+        <td>${formatCurrency(item.notional)}</td>
+        <td>${fairValueFormatted}</td>
+        <td>${typeof item.rate === 'number' ? item.rate.toFixed(2) + '%' : item.rate}</td>
+        <td>${item.maturity}</td>
+        <td>${item.duration.toFixed(1)}</td>
+        <td>${item.convexity.toFixed(2)}</td>
+        <td>${item.hedgeStatus}</td>
+      `;
+      
+      tableBody.appendChild(row);
+    });
+}
+
+// Function to filter instruments by category
+function filterInstruments() {
+  const filter = document.getElementById('instrument-category-filter').value;
+  populateEconomicDetailsTable(filter);
+}
+
+// Helper function to capitalize first letter
+function capitalizeFirstLetter(string) {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+
+// First, replace the placeholder HTML in the stress testing tab with a proper implementation
+
+// Find the stress testing tab content div and replace its content
+function initializeStressTestingTab() {
+  const stressTestView = document.getElementById('view-stress');
+  
+  if (!stressTestView) return;
+  
+  // Replace placeholder with full implementation
+  stressTestView.innerHTML = `
+    <!-- Stress Testing Header Metrics -->
+    <div class="panel grid-full">
+      <div class="panel-header">
+        <span>Stress Testing Dashboard</span>
+        <span>as of 2025-03-25</span>
+      </div>
+      <div class="panel-content">
+        <div style="margin-bottom: 10px; display: flex; gap: 10px;">
+          <select id="stress-scenario-selector" class="filter-dropdown" onchange="updateStressScenario()">
+            <option value="baseline">Baseline</option>
+            <option value="severe-recession">Severe Recession</option>
+            <option value="rate-shock-up">Rate Shock (+300bp)</option>
+            <option value="rate-shock-down">Rate Shock (-200bp)</option>
+            <option value="liquidity-crisis">Liquidity Crisis</option>
+            <option value="stagflation">Stagflation</option>
+            <option value="cyber-attack">Cyber Attack</option>
+          </select>
+          <button id="run-stress-test" class="filter-dropdown" onclick="runStressTest()">Run Stress Test</button>
+        </div>
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-label">
+              Capital Adequacy Ratio
+              <span class="info-icon" data-tooltip="Stressed Capital Adequacy Ratio after applying the selected scenario. Regulatory minimum is 8%.">ⓘ</span>
+            </div>
+            <div class="metric-value" id="stress-car">12.5%</div>
+            <div class="trend" id="stress-car-impact">▼ -1.8pp</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">
+              Liquidity Coverage Ratio
+              <span class="info-icon" data-tooltip="Stressed Liquidity Coverage Ratio after applying the selected scenario. Regulatory minimum is 100%.">ⓘ</span>
+            </div>
+            <div class="metric-value" id="stress-lcr">105%</div>
+            <div class="trend" id="stress-lcr-impact">▼ -15pp</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">
+              Net Interest Margin
+              <span class="info-icon" data-tooltip="Stressed Net Interest Margin after applying the selected scenario.">ⓘ</span>
+            </div>
+            <div class="metric-value" id="stress-nim">2.35%</div>
+            <div class="trend" id="stress-nim-impact">▼ -0.50pp</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">
+              Non-Performing Loan Ratio
+              <span class="info-icon" data-tooltip="Stressed Non-Performing Loan Ratio after applying the selected scenario.">ⓘ</span>
+            </div>
+            <div class="metric-value negative" id="stress-npl">2.85%</div>
+            <div class="trend" id="stress-npl-impact">▲ +2.20pp</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">
+              Deposit Outflow
+              <span class="info-icon" data-tooltip="Estimated deposit outflow under the stressed scenario.">ⓘ</span>
+            </div>
+            <div class="metric-value negative" id="stress-deposit-outflow">12.5%</div>
+            <div class="trend" id="stress-deposit-outflow-impact">▲ +10.0pp</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">
+              Income Impact
+              <span class="info-icon" data-tooltip="Impact on annual net income under the stressed scenario.">ⓘ</span>
+            </div>
+            <div class="metric-value negative" id="stress-income-impact">-45%</div>
+            <div class="trend" id="stress-income-abs">-$1.58B</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">
+              Market Value Impact
+              <span class="info-icon" data-tooltip="Impact on the market value of assets under the stressed scenario.">ⓘ</span>
+            </div>
+            <div class="metric-value negative" id="stress-mv-impact">-8.2%</div>
+            <div class="trend" id="stress-mv-abs">-$10.25B</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">
+              Survival Horizon
+              <span class="info-icon" data-tooltip="Estimated survival horizon in a stressed liquidity scenario without market access.">ⓘ</span>
+            </div>
+            <div class="metric-value" id="stress-survival">32 days</div>
+            <div class="trend" id="stress-survival-impact">▼ -13 days</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Stress Impact Visualization -->
+    <div class="panel grid-1-1">
+      <div class="panel-header">
+        <span id="stress-chart-title">Stress Impact: Severe Recession</span>
+        <span class="info-icon" data-tooltip="Visualization of key metric impacts under the selected stress scenario, showing percentage changes from baseline.">ⓘ</span>
+      </div>
+      <div class="panel-content">
+        <div class="chart-container">
+          <canvas id="stressImpactChart"></canvas>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Capital Trajectory -->
+    <div class="panel grid-1-1">
+      <div class="panel-header">
+        <span>Capital Trajectory</span>
+        <span class="info-icon" data-tooltip="Projected capital ratio trajectory over the stress test horizon, showing how capital changes over time under stress.">ⓘ</span>
+      </div>
+      <div class="panel-content">
+        <div class="chart-container">
+          <canvas id="capitalTrajectoryChart"></canvas>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Asset Quality Impact -->
+    <div class="panel grid-1-3">
+      <div class="panel-header">
+        <span>Asset Quality Impact</span>
+        <span class="info-icon" data-tooltip="Impact on asset quality metrics by portfolio segment under the stressed scenario.">ⓘ</span>
+      </div>
+      <div class="panel-content">
+        <div class="chart-container">
+          <canvas id="assetQualityChart"></canvas>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Liquidity Impact -->
+    <div class="panel grid-1-3">
+      <div class="panel-header">
+        <span>Liquidity Outflow Analysis</span>
+        <span class="info-icon" data-tooltip="Analysis of liquidity outflows by source under the stressed scenario.">ⓘ</span>
+      </div>
+      <div class="panel-content">
+        <div class="chart-container">
+          <canvas id="liquidityOutflowChart"></canvas>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Detailed Stress Impact by Category -->
+    <div class="panel grid-full">
+      <div class="panel-header">
+        <span>Stress Impact by Category</span>
+        <span class="info-icon" data-tooltip="Detailed breakdown of stress impacts across different risk categories and balance sheet components.">ⓘ</span>
+      </div>
+      <div class="panel-content">
+        <div style="height: 100%; overflow-y: auto;">
+          <table id="stressDetailTable">
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Metric</th>
+                <th>Baseline</th>
+                <th>Stressed</th>
+                <th>Absolute Change</th>
+                <th>% Change</th>
+                <th>Threshold</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="stressDetailTableBody">
+              <!-- Will be populated by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Mitigating Actions -->
+    <div class="panel grid-full">
+      <div class="panel-header">
+        <span>Recommended Mitigating Actions</span>
+        <span class="info-icon" data-tooltip="Automatically generated recommendations for mitigating the impacts of the stress scenario.">ⓘ</span>
+      </div>
+      <div class="panel-content">
+        <div id="mitigating-actions-container" style="height: 100%; overflow-y: auto;">
+          <div class="panel-content" style="padding: 15px;">
+            <p style="margin-bottom: 15px;"><strong>Key Actions to Consider:</strong></p>
+            <ul id="mitigating-actions-list" style="list-style-type: none; padding-left: 10px;">
+              <!-- Will be populated by JavaScript -->
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Add additional styles to make the button look better
+  const style = document.createElement('style');
+  style.textContent = `
+    #run-stress-test {
+      background-color: var(--accent-blue);
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    #run-stress-test:hover {
+      background-color: #1a68e0;
+    }
+    #mitigating-actions-list li {
+      margin-bottom: 10px;
+      padding-left: 20px;
+      position: relative;
+    }
+    #mitigating-actions-list li:before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: var(--accent-blue);
+    }
+  `;
+  document.head.appendChild(style);
+  
+  // Initialize stress testing charts
+  initializeStressCharts();
+  
+  // Populate stress detail table with initial scenario data
+  populateStressDetailTable('severe-recession');
+  
+  // Populate mitigating actions
+  populateMitigatingActions('severe-recession');
+}
+
+// Define stress test scenario data
+const stressScenarios = {
+  baseline: {
+    name: "Baseline",
+    description: "Current economic conditions with no stress applied.",
+    car: { value: 14.3, impact: 0 },
+    lcr: { value: 120, impact: 0 },
+    nim: { value: 2.85, impact: 0 },
+    npl: { value: 0.65, impact: 0 },
+    depositOutflow: { value: 2.5, impact: 0 },
+    incomeImpact: { value: 0, absoluteImpact: 0 },
+    marketValueImpact: { value: 0, absoluteImpact: 0 },
+    survivalHorizon: { value: 45, impact: 0 },
+    capitalTrajectory: [14.3, 14.3, 14.4, 14.5, 14.6, 14.7, 14.8, 14.9],
+    assetQuality: {
+      categories: ['Residential Mortgages', 'Commercial RE', 'C&I', 'Consumer', 'Other'],
+      baseline: [0.5, 0.8, 0.7, 1.2, 0.4],
+      stressed: [0.5, 0.8, 0.7, 1.2, 0.4]
+    },
+    liquidityOutflow: {
+      categories: ['Retail Deposits', 'Corporate Deposits', 'Wholesale Funding', 'Credit Lines', 'Other'],
+      values: [2, 3, 4, 3, 1]
+    }
+  },
+  
+  "severe-recession": {
+    name: "Severe Recession",
+    description: "Deep economic recession with GDP contraction of 6%, unemployment at 10%, and housing price decline of 30%.",
+    car: { value: 12.5, impact: -1.8 },
+    lcr: { value: 105, impact: -15 },
+    nim: { value: 2.35, impact: -0.50 },
+    npl: { value: 2.85, impact: 2.20 },
+    depositOutflow: { value: 12.5, impact: 10.0 },
+    incomeImpact: { value: -45, absoluteImpact: -1.58 },
+    marketValueImpact: { value: -8.2, absoluteImpact: -10.25 },
+    survivalHorizon: { value: 32, impact: -13 },
+    capitalTrajectory: [14.3, 13.8, 13.2, 12.7, 12.5, 12.4, 12.3, 12.5],
+    assetQuality: {
+      categories: ['Residential Mortgages', 'Commercial RE', 'C&I', 'Consumer', 'Other'],
+      baseline: [0.5, 0.8, 0.7, 1.2, 0.4],
+      stressed: [2.2, 3.5, 3.0, 4.8, 1.5]
+    },
+    liquidityOutflow: {
+      categories: ['Retail Deposits', 'Corporate Deposits', 'Wholesale Funding', 'Credit Lines', 'Other'],
+      values: [10, 15, 25, 18, 5]
+    },
+    mitigatingActions: [
+      "Increase liquidity buffer by reducing new loan originations by 25% over next 2 quarters",
+      "Implement targeted deposit retention program for high-value customers",
+      "Accelerate planned debt issuance to secure longer-term funding",
+      "Increase loan loss provisions by $750M to account for deteriorating credit quality",
+      "Activate contingent funding arrangements with correspondent banks",
+      "Temporarily reduce dividend payout ratio from 40% to 20%"
+    ],
+    detailedImpacts: [
+      { category: "Capital", metric: "CET1 Ratio", baseline: "12.8%", stressed: "11.0%", absChange: "-1.8pp", pctChange: "-14.1%", threshold: "7.0%", status: "Adequate" },
+      { category: "Capital", metric: "Tier 1 Capital Ratio", baseline: "14.3%", stressed: "12.5%", absChange: "-1.8pp", pctChange: "-12.6%", threshold: "8.5%", status: "Adequate" },
+      { category: "Capital", metric: "Total Capital Ratio", baseline: "16.2%", stressed: "14.3%", absChange: "-1.9pp", pctChange: "-11.7%", threshold: "10.5%", status: "Adequate" },
+      { category: "Capital", metric: "Leverage Ratio", baseline: "8.5%", stressed: "7.6%", absChange: "-0.9pp", pctChange: "-10.6%", threshold: "4.0%", status: "Strong" },
+      { category: "Liquidity", metric: "LCR", baseline: "120%", stressed: "105%", absChange: "-15pp", pctChange: "-12.5%", threshold: "100%", status: "Adequate" },
+      { category: "Liquidity", metric: "NSFR", baseline: "115%", stressed: "102%", absChange: "-13pp", pctChange: "-11.3%", threshold: "100%", status: "Adequate" },
+      { category: "Liquidity", metric: "30-Day Liquidity Gap", baseline: "$5.0B", stressed: "$1.2B", absChange: "-$3.8B", pctChange: "-76.0%", threshold: "> $0", status: "Adequate" },
+      { category: "Liquidity", metric: "Survival Horizon", baseline: "45 days", stressed: "32 days", absChange: "-13 days", pctChange: "-28.9%", threshold: "30 days", status: "Adequate" },
+      { category: "Profitability", metric: "Net Interest Margin", baseline: "2.85%", stressed: "2.35%", absChange: "-0.50pp", pctChange: "-17.5%", threshold: "1.75%", status: "Adequate" },
+      { category: "Profitability", metric: "Net Income", baseline: "$3.5B", stressed: "$1.92B", absChange: "-$1.58B", pctChange: "-45.0%", threshold: "> $0", status: "Adequate" },
+      { category: "Profitability", metric: "Return on Equity", baseline: "12.5%", stressed: "6.9%", absChange: "-5.6pp", pctChange: "-44.8%", threshold: "5.0%", status: "Adequate" },
+      { category: "Asset Quality", metric: "NPL Ratio", baseline: "0.65%", stressed: "2.85%", absChange: "+2.20pp", pctChange: "+338.5%", threshold: "5.0%", status: "Adequate" },
+      { category: "Asset Quality", metric: "Loan Loss Coverage", baseline: "185%", stressed: "95%", absChange: "-90pp", pctChange: "-48.6%", threshold: "80%", status: "Adequate" },
+      { category: "Asset Quality", metric: "Net Charge-Off Rate", baseline: "0.22%", stressed: "1.35%", absChange: "+1.13pp", pctChange: "+513.6%", threshold: "2.0%", status: "Adequate" },
+      { category: "Market Risk", metric: "MVE Sensitivity (±100bp)", baseline: "-6.67%", stressed: "-9.8%", absChange: "-3.13pp", pctChange: "+46.9%", threshold: "-15%", status: "Adequate" },
+      { category: "Market Risk", metric: "Duration Gap", baseline: "2.1 yrs", stressed: "2.8 yrs", absChange: "+0.7 yrs", pctChange: "+33.3%", threshold: "< 4 yrs", status: "Adequate" }
+    ]
+  },
+  
+  "rate-shock-up": {
+    name: "Rate Shock (+300bp)",
+    description: "Sudden parallel shift upward in the yield curve by 300 basis points over 3 months.",
+    car: { value: 13.5, impact: -0.8 },
+    lcr: { value: 115, impact: -5 },
+    nim: { value: 3.25, impact: 0.40 },
+    npl: { value: 1.15, impact: 0.50 },
+    depositOutflow: { value: 8.0, impact: 5.5 },
+    incomeImpact: { value: 12, absoluteImpact: 0.42 },
+    marketValueImpact: { value: -12.5, absoluteImpact: -15.63 },
+    survivalHorizon: { value: 40, impact: -5 },
+    capitalTrajectory: [14.3, 13.9, 13.6, 13.5, 13.4, 13.5, 13.6, 13.8],
+    assetQuality: {
+      categories: ['Residential Mortgages', 'Commercial RE', 'C&I', 'Consumer', 'Other'],
+      baseline: [0.5, 0.8, 0.7, 1.2, 0.4],
+      stressed: [0.9, 1.5, 1.2, 1.8, 0.7]
+    },
+    liquidityOutflow: {
+      categories: ['Retail Deposits', 'Corporate Deposits', 'Wholesale Funding', 'Credit Lines', 'Other'],
+      values: [7, 10, 12, 8, 3]
+    },
+    mitigatingActions: [
+      "Accelerate balance sheet hedging program with additional received-fixed swaps",
+      "Implement deposit retention strategies focusing on rate-sensitive customers",
+      "Increase floating rate assets in the loan and securities portfolios",
+      "Reduce duration in the securities portfolio through asset sales and reinvestment",
+      "Consider early redemption of long-term fixed rate debt where economically feasible"
+    ]
+  },
+  
+  "rate-shock-down": {
+    name: "Rate Shock (-200bp)",
+    description: "Sudden parallel shift downward in the yield curve by 200 basis points over 3 months.",
+    car: { value: 14.8, impact: 0.5 },
+    lcr: { value: 125, impact: 5 },
+    nim: { value: 2.35, impact: -0.50 },
+    npl: { value: 0.95, impact: 0.30 },
+    depositOutflow: { value: 4.0, impact: 1.5 },
+    incomeImpact: { value: -18, absoluteImpact: -0.63 },
+    marketValueImpact: { value: 9.5, absoluteImpact: 11.88 },
+    survivalHorizon: { value: 48, impact: 3 },
+    capitalTrajectory: [14.3, 14.5, 14.7, 14.8, 14.8, 14.7, 14.6, 14.5],
+    assetQuality: {
+      categories: ['Residential Mortgages', 'Commercial RE', 'C&I', 'Consumer', 'Other'],
+      baseline: [0.5, 0.8, 0.7, 1.2, 0.4],
+      stressed: [0.7, 1.0, 0.9, 1.5, 0.5]
+    },
+    liquidityOutflow: {
+      categories: ['Retail Deposits', 'Corporate Deposits', 'Wholesale Funding', 'Credit Lines', 'Other'],
+      values: [3, 5, 8, 6, 2]
+    },
+    mitigatingActions: [
+      "Extend duration of assets to capture higher yields at longer tenors",
+      "Reduce excess liquidity by paying down short-term wholesale funding",
+      "Accelerate loan growth in high-quality segments to offset NIM compression",
+      "Implement pay-fixed swaps to hedge against further rate decreases",
+      "Adjust deposit pricing strategy to preserve margins"
+    ]
+  },
+  
+  "liquidity-crisis": {
+    name: "Liquidity Crisis",
+    description: "Severe liquidity stress scenario with significant deposit outflows and frozen wholesale funding markets.",
+    car: { value: 13.8, impact: -0.5 },
+    lcr: { value: 85, impact: -35 },
+    nim: { value: 2.55, impact: -0.30 },
+    npl: { value: 1.25, impact: 0.60 },
+    depositOutflow: { value: 22.0, impact: 19.5 },
+    incomeImpact: { value: -25, absoluteImpact: -0.88 },
+    marketValueImpact: { value: -5.5, absoluteImpact: -6.88 },
+    survivalHorizon: { value: 25, impact: -20 },
+    capitalTrajectory: [14.3, 14.1, 13.9, 13.8, 13.8, 13.9, 14.0, 14.1],
+    assetQuality: {
+      categories: ['Residential Mortgages', 'Commercial RE', 'C&I', 'Consumer', 'Other'],
+      baseline: [0.5, 0.8, 0.7, 1.2, 0.4],
+      stressed: [0.8, 1.2, 1.4, 1.8, 0.6]
+    },
+    liquidityOutflow: {
+      categories: ['Retail Deposits', 'Corporate Deposits', 'Wholesale Funding', 'Credit Lines', 'Other'],
+      values: [18, 25, 35, 22, 10]
+    },
+    mitigatingActions: [
+      "Activate contingency funding plan to access central bank facilities",
+      "Implement deposit retention program with targeted rate increases for key customers",
+      "Temporarily suspend new lending to preserve liquidity",
+      "Sell highly liquid securities to generate immediate cash",
+      "Draw down on committed credit lines with other financial institutions",
+      "Implement daily liquidity monitoring for cash flow projections"
+    ]
+  },
+  
+  "stagflation": {
+    name: "Stagflation",
+    description: "Economic stagnation combined with high inflation, rising unemployment, and elevated interest rates.",
+    car: { value: 13.2, impact: -1.1 },
+    lcr: { value: 110, impact: -10 },
+    nim: { value: 3.05, impact: 0.20 },
+    npl: { value: 2.05, impact: 1.40 },
+    depositOutflow: { value: 10.0, impact: 7.5 },
+    incomeImpact: { value: -28, absoluteImpact: -0.98 },
+    marketValueImpact: { value: -9.8, absoluteImpact: -12.25 },
+    survivalHorizon: { value: 35, impact: -10 },
+    capitalTrajectory: [14.3, 14.0, 13.7, 13.4, 13.2, 13.1, 13.2, 13.3],
+    assetQuality: {
+      categories: ['Residential Mortgages', 'Commercial RE', 'C&I', 'Consumer', 'Other'],
+      baseline: [0.5, 0.8, 0.7, 1.2, 0.4],
+      stressed: [1.8, 2.5, 2.3, 3.5, 1.2]
+    },
+    liquidityOutflow: {
+      categories: ['Retail Deposits', 'Corporate Deposits', 'Wholesale Funding', 'Credit Lines', 'Other'],
+      values: [8, 12, 18, 14, 6]
+    },
+    mitigatingActions: [
+      "Increase focus on inflation-resistant loan segments",
+      "Implement dynamic loan pricing to account for higher credit risk and inflation",
+      "Enhance credit monitoring for early identification of distressed borrowers",
+      "Rebalance investment portfolio toward inflation-protected securities",
+      "Reduce exposure to sectors most vulnerable to stagflation (e.g., discretionary retail, low-margin manufacturing)"
+    ]
+  },
+  
+  "cyber-attack": {
+    name: "Cyber Attack",
+    description: "Major cyber security breach affecting customer data access, transaction processing, and operational capabilities.",
+    car: { value: 14.0, impact: -0.3 },
+    lcr: { value: 105, impact: -15 },
+    nim: { value: 2.65, impact: -0.20 },
+    npl: { value: 0.90, impact: 0.25 },
+    depositOutflow: { value: 15.0, impact: 12.5 },
+    incomeImpact: { value: -35, absoluteImpact: -1.23 },
+    marketValueImpact: { value: -3.5, absoluteImpact: -4.38 },
+    survivalHorizon: { value: 30, impact: -15 },
+    capitalTrajectory: [14.3, 14.2, 14.1, 14.0, 14.0, 14.1, 14.2, 14.3],
+    assetQuality: {
+      categories: ['Residential Mortgages', 'Commercial RE', 'C&I', 'Consumer', 'Other'],
+      baseline: [0.5, 0.8, 0.7, 1.2, 0.4],
+      stressed: [0.6, 0.9, 0.8, 1.5, 0.5]
+    },
+    liquidityOutflow: {
+      categories: ['Retail Deposits', 'Corporate Deposits', 'Wholesale Funding', 'Credit Lines', 'Other'],
+      values: [15, 18, 12, 10, 8]
+    },
+    mitigatingActions: [
+      "Activate business continuity plan and cyber incident response procedures",
+      "Implement emergency customer communication strategy to prevent panic",
+      "Prepare for temporary branch network expansion to handle in-person transactions",
+      "Secure additional short-term liquidity to manage potential deposit outflows",
+      "Consider temporary suspension of digital banking channels if compromise is severe",
+      "Prepare for potential regulatory fines and customer remediation costs"
+    ]
+  }
+};
+
+// Function to initialize stress testing charts
+function initializeStressCharts() {
+  // Stress Impact Chart (Radar Chart)
+  const initialScenario = stressScenarios['severe-recession'];
+  
+  const stressImpactCtx = document.getElementById('stressImpactChart').getContext('2d');
+  window.stressImpactChart = new Chart(stressImpactCtx, {
+    type: 'radar',
+    data: {
+      labels: ['Capital', 'Liquidity', 'Profitability', 'Asset Quality', 'Deposit Stability', 'Market Value'],
+      datasets: [{
+        label: 'Baseline',
+        data: [100, 100, 100, 100, 100, 100],
+        backgroundColor: 'rgba(45, 123, 237, 0.2)',
+        borderColor: 'rgba(45, 123, 237, 0.8)',
+        pointBackgroundColor: 'rgba(45, 123, 237, 1)',
+        pointRadius: 4
+      }, {
+        label: initialScenario.name,
+        data: [
+          100 + (initialScenario.car.impact / 14.3 * 100),
+          100 + (initialScenario.lcr.impact / 120 * 100),
+          100 + (initialScenario.incomeImpact.value),
+          100 - (initialScenario.npl.impact / 0.65 * 100),
+          100 - (initialScenario.depositOutflow.impact / 2.5 * 100),
+          100 + (initialScenario.marketValueImpact.value)
+        ],
+        backgroundColor: 'rgba(255, 61, 113, 0.2)',
+        borderColor: 'rgba(255, 61, 113, 0.8)',
+        pointBackgroundColor: 'rgba(255, 61, 113, 1)',
+        pointRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        r: {
+          angleLines: {
+            color: 'rgba(42, 53, 72, 0.8)'
+          },
+          grid: {
+            color: 'rgba(42, 53, 72, 0.8)'
+          },
+          pointLabels: {
+            color: '#a0a0a0',
+            font: {
+              size: 12
+            }
+          },
+          suggestedMin: 40,
+          suggestedMax: 120,
+          ticks: {
+            stepSize: 20,
+            callback: function(value) {
+              if (value === 100) return 'Baseline';
+              return value < 100 ? (100 - value) + '% Worse' : (value - 100) + '% Better';
+            }
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          position: 'bottom'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const label = context.dataset.label || '';
+              const value = context.raw;
+              if (value === 100) return label + ': Baseline (No Change)';
+              return value < 100 
+                ? label + ': ' + (100 - value).toFixed(1) + '% Worse than Baseline' 
+                : label + ': ' + (value - 100).toFixed(1) + '% Better than Baseline';
+            }
+          }
+        }
+      }
+    }
+  });
+  
+  // Capital Trajectory Chart
+  const capitalTrajectoryCtx = document.getElementById('capitalTrajectoryChart').getContext('2d');
+  window.capitalTrajectoryChart = new Chart(capitalTrajectoryCtx, {
+    type: 'line',
+    data: {
+      labels: ['Starting', 'Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6', 'Q7'],
+      datasets: [{
+        label: 'Baseline',
+        data: stressScenarios.baseline.capitalTrajectory,
+        borderColor: 'rgba(0, 194, 129, 0.8)',
+        backgroundColor: 'rgba(0, 194, 129, 0.1)',
+        fill: true,
+        tension: 0.1
+      }, {
+        label: initialScenario.name,
+        data: initialScenario.capitalTrajectory,
+        borderColor: 'rgba(255, 61, 113, 0.8)',
+        backgroundColor: 'rgba(255, 61, 113, 0.1)',
+        fill: true,
+        tension: 0.1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: 'Time Horizon'
+          }
+        },
+        y: {
+          title: {
+            display: true,
+            text: 'Capital Ratio (%)'
+          },
+          suggestedMin: Math.min(...initialScenario.capitalTrajectory) - 1,
+          suggestedMax: Math.max(...stressScenarios.baseline.capitalTrajectory) + 1
+        }
+      },
+      plugins: {
+        annotation: {
+          annotations: {
+            regulatoryMinimum: {
+              type: 'line',
+              yMin: 10.5,
+              yMax: 10.5,
+              borderColor: 'rgba(255, 170, 0, 0.8)',
+              borderWidth: 2,
+              borderDash: [5, 5],
+              label: {
+                display: true,
+                content: 'Regulatory Minimum (10.5%)',
+                position: 'end',
+                color: 'rgba(255, 170, 0, 1)'
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+  
+  // Asset Quality Chart
+  const assetQualityCtx = document.getElementById('assetQualityChart').getContext('2d');
+  window.assetQualityChart = new Chart(assetQualityCtx, {
+    type: 'bar',
+    data: {
+      labels: initialScenario.assetQuality.categories,
+      datasets: [{
+        label: 'Baseline NPL Ratio (%)',
+        data: initialScenario.assetQuality.baseline,
+        backgroundColor: 'rgba(45, 123, 237, 0.7)'
+      }, {
+        label: 'Stressed NPL Ratio (%)',
+        data: initialScenario.assetQuality.stressed,
+        backgroundColor: 'rgba(255, 61, 113, 0.7)'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: 'Portfolio Segment'
+          }
+        },
+        y: {
+          title: {
+            display: true,
+            text: 'NPL Ratio (%)'
+          },
+          beginAtZero: true
+        }
+      }
+    }
+  });
+  
+  // Liquidity Outflow Chart
+  const liquidityOutflowCtx = document.getElementById('liquidityOutflowChart').getContext('2d');
+  window.liquidityOutflowChart = new Chart(liquidityOutflowCtx, {
+    type: 'doughnut',
+    data: {
+      labels: initialScenario.liquidityOutflow.categories,
+      datasets: [{
+        data: initialScenario.liquidityOutflow.values,
+        backgroundColor: chartColors.backgroundColors
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const label = context.label || '';
+              const value = context.raw;
+              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+              const percentage = ((value / total) * 100).toFixed(1);
+              return label + ': ' + value + '% (' + percentage + '% of total outflow)';
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// Function to update displayed scenario
+function updateStressScenario() {
+  const scenarioKey = document.getElementById('stress-scenario-selector').value;
+  const scenario = stressScenarios[scenarioKey];
+  
+  if (!scenario) return;
+  
+  // Update header metrics
+  document.getElementById('stress-car').textContent = scenario.car.value.toFixed(1) + '%';
+  document.getElementById('stress-car-impact').textContent = scenario.car.impact > 0 ? `▲ +${scenario.car.impact.toFixed(1)}pp` : `▼ ${scenario.car.impact.toFixed(1)}pp`;
+  document.getElementById('stress-car').className = scenario.car.impact >= 0 ? 'metric-value positive' : 'metric-value negative';
+  
+  document.getElementById('stress-lcr').textContent = scenario.lcr.value.toFixed(0) + '%';
+  document.getElementById('stress-lcr-impact').textContent = scenario.lcr.impact > 0 ? `▲ +${scenario.lcr.impact.toFixed(0)}pp` : `▼ ${scenario.lcr.impact.toFixed(0)}pp`;
+  document.getElementById('stress-lcr').className = scenario.lcr.impact >= 0 ? 'metric-value positive' : (scenario.lcr.value < 100 ? 'metric-value negative' : 'metric-value neutral');
+  
+  document.getElementById('stress-nim').textContent = scenario.nim.value.toFixed(2) + '%';
+  document.getElementById('stress-nim-impact').textContent = scenario.nim.impact > 0 ? `▲ +${scenario.nim.impact.toFixed(2)}pp` : `▼ ${scenario.nim.impact.toFixed(2)}pp`;
+  document.getElementById('stress-nim').className = scenario.nim.impact >= 0 ? 'metric-value positive' : 'metric-value negative';
+  
+  document.getElementById('stress-npl').textContent = scenario.npl.value.toFixed(2) + '%';
+  document.getElementById('stress-npl-impact').textContent = scenario.npl.impact > 0 ? `▲ +${scenario.npl.impact.toFixed(2)}pp` : `▼ ${scenario.npl.impact.toFixed(2)}pp`;
+  document.getElementById('stress-npl').className = 'metric-value negative';
+  
+  document.getElementById('stress-deposit-outflow').textContent = scenario.depositOutflow.value.toFixed(1) + '%';
+  document.getElementById('stress-deposit-outflow-impact').textContent = scenario.depositOutflow.impact > 0 ? `▲ +${scenario.depositOutflow.impact.toFixed(1)}pp` : `▼ ${scenario.depositOutflow.impact.toFixed(1)}pp`;
+  document.getElementById('stress-deposit-outflow').className = 'metric-value negative';
+  
+  document.getElementById('stress-income-impact').textContent = scenario.incomeImpact.value > 0 ? `+${scenario.incomeImpact.value}%` : `${scenario.incomeImpact.value}%`;
+  document.getElementById('stress-income-abs').textContent = scenario.incomeImpact.absoluteImpact > 0 ? `+$${Math.abs(scenario.incomeImpact.absoluteImpact).toFixed(2)}B` : `-$${Math.abs(scenario.incomeImpact.absoluteImpact).toFixed(2)}B`;
+  document.getElementById('stress-income-impact').className = scenario.incomeImpact.value >= 0 ? 'metric-value positive' : 'metric-value negative';
+  
+  document.getElementById('stress-mv-impact').textContent = scenario.marketValueImpact.value > 0 ? `+${scenario.marketValueImpact.value}%` : `${scenario.marketValueImpact.value}%`;
+  document.getElementById('stress-mv-abs').textContent = scenario.marketValueImpact.absoluteImpact > 0 ? `+$${Math.abs(scenario.marketValueImpact.absoluteImpact).toFixed(2)}B` : `-$${Math.abs(scenario.marketValueImpact.absoluteImpact).toFixed(2)}B`;
+  document.getElementById('stress-mv-impact').className = scenario.marketValueImpact.value >= 0 ? 'metric-value positive' : 'metric-value negative';
+  
+  document.getElementById('stress-survival').textContent = scenario.survivalHorizon.value + ' days';
+  document.getElementById('stress-survival-impact').textContent = scenario.survivalHorizon.impact > 0 ? `▲ +${scenario.survivalHorizon.impact} days` : `▼ ${scenario.survivalHorizon.impact} days`;
+  document.getElementById('stress-survival').className = scenario.survivalHorizon.value >= 30 ? 'metric-value positive' : 'metric-value negative';
+  
+  // Update chart title
+  document.getElementById('stress-chart-title').textContent = `Stress Impact: ${scenario.name}`;
+  
+  // Update radar chart
+  if (window.stressImpactChart) {
+    window.stressImpactChart.data.datasets[1].label = scenario.name;
+    window.stressImpactChart.data.datasets[1].data = [
+      100 + (scenario.car.impact / 14.3 * 100),
+      100 + (scenario.lcr.impact / 120 * 100),
+      100 + (scenario.incomeImpact.value),
+      100 - (scenario.npl.impact / 0.65 * 100),
+      100 - (scenario.depositOutflow.impact / 2.5 * 100),
+      100 + (scenario.marketValueImpact.value)
+    ];
+    window.stressImpactChart.update();
+  }
+  
+  // Update capital trajectory chart
+  if (window.capitalTrajectoryChart) {
+    window.capitalTrajectoryChart.data.datasets[1].label = scenario.name;
+    window.capitalTrajectoryChart.data.datasets[1].data = scenario.capitalTrajectory;
+    window.capitalTrajectoryChart.options.scales.y.suggestedMin = Math.min(...scenario.capitalTrajectory) - 1;
+    window.capitalTrajectoryChart.update();
+  }
+  
+  // Update asset quality chart
+  if (window.assetQualityChart) {
+    window.assetQualityChart.data.labels = scenario.assetQuality.categories;
+    window.assetQualityChart.data.datasets[0].data = scenario.assetQuality.baseline;
+    window.assetQualityChart.data.datasets[1].data = scenario.assetQuality.stressed;
+    window.assetQualityChart.update();
+  }
+  
+  // Update liquidity outflow chart
+  if (window.liquidityOutflowChart) {
+    window.liquidityOutflowChart.data.labels = scenario.liquidityOutflow.categories;
+    window.liquidityOutflowChart.data.datasets[0].data = scenario.liquidityOutflow.values;
+    window.liquidityOutflowChart.update();
+  }
+  
+  // Update detailed stress impacts
+  populateStressDetailTable(scenarioKey);
+  
+  // Update mitigating actions
+  populateMitigatingActions(scenarioKey);
+}
+
+// Function to populate stress detail table
+function populateStressDetailTable(scenarioKey) {
+  const scenario = stressScenarios[scenarioKey];
+  const tableBody = document.getElementById('stressDetailTableBody');
+  
+  if (!tableBody || !scenario || !scenario.detailedImpacts) {
+    // If no detailed impacts for this scenario, show generic message
+    if (tableBody) {
+      tableBody.innerHTML = `
+        <tr>
+          <td colspan="8" style="text-align: center; padding: 20px;">
+            Detailed impact data not available for ${scenario ? scenario.name : 'this scenario'}. 
+            Select "Severe Recession" for a complete detailed breakdown.
+          </td>
+        </tr>
+      `;
+    }
+    return;
+  }
+  
+  // Clear existing rows
+  tableBody.innerHTML = '';
+  
+  // Add rows for each impact
+  scenario.detailedImpacts.forEach(impact => {
+    const row = document.createElement('tr');
+    
+    // Determine status class
+    let statusClass = 'neutral';
+    if (impact.status === 'Strong') statusClass = 'positive';
+    if (impact.status === 'Warning') statusClass = 'orange';
+    if (impact.status === 'Critical') statusClass = 'negative';
+    
+    // Determine change classes
+    const isNegativeImpact = impact.absChange.includes('-') && !impact.metric.includes('NPL') && !impact.metric.includes('Charge-Off');
+    const isPositiveImpact = !impact.absChange.includes('-') && (impact.metric.includes('NPL') || impact.metric.includes('Charge-Off'));
+    
+    const changeClass = isNegativeImpact || isPositiveImpact ? 'negative' : 'positive';
+    
+    row.innerHTML = `
+      <td>${impact.category}</td>
+      <td>${impact.metric}</td>
+      <td>${impact.baseline}</td>
+      <td>${impact.stressed}</td>
+      <td class="${changeClass}">${impact.absChange}</td>
+      <td class="${changeClass}">${impact.pctChange}</td>
+      <td>${impact.threshold}</td>
+      <td class="${statusClass}">${impact.status}</td>
+    `;
+    
+    tableBody.appendChild(row);
+  });
+}
+
+// Function to populate mitigating actions
+function populateMitigatingActions(scenarioKey) {
+  const scenario = stressScenarios[scenarioKey];
+  const actionsList = document.getElementById('mitigating-actions-list');
+  
+  if (!actionsList || !scenario || !scenario.mitigatingActions) {
+    if (actionsList) {
+      actionsList.innerHTML = '<li>No specific mitigating actions identified for this scenario.</li>';
+    }
+    return;
+  }
+  
+  // Clear existing actions
+  actionsList.innerHTML = '';
+  
+  // Add each mitigating action
+  scenario.mitigatingActions.forEach(action => {
+    const item = document.createElement('li');
+    item.textContent = action;
+    actionsList.appendChild(item);
+  });
+}
+
+// Simulate stress test execution with loading indicator
+function runStressTest() {
+  const button = document.getElementById('run-stress-test');
+  if (!button) return;
+  
+  // Show loading state
+  button.textContent = 'Running Test...';
+  button.style.backgroundColor = 'var(--accent-orange)';
+  button.disabled = true;
+  
+  // Simulate test execution time
+  setTimeout(() => {
+    // Restore button state
+    button.textContent = 'Run Stress Test';
+    button.style.backgroundColor = 'var(--accent-blue)';
+    button.disabled = false;
+    
+    // Get current scenario and apply "random" variations to make it look like a fresh run
+    const scenarioKey = document.getElementById('stress-scenario-selector').value;
+    const scenario = stressScenarios[scenarioKey];
+    
+    if (scenario) {
+      // Apply small random variations to metrics (±5%)
+      const randomFactor = () => 1 + (Math.random() * 0.1 - 0.05);
+      
+      // Update displayed metrics with slight variations
+      document.getElementById('stress-car').textContent = (scenario.car.value * randomFactor()).toFixed(1) + '%';
+      document.getElementById('stress-lcr').textContent = (scenario.lcr.value * randomFactor()).toFixed(0) + '%';
+      document.getElementById('stress-nim').textContent = (scenario.nim.value * randomFactor()).toFixed(2) + '%';
+      document.getElementById('stress-npl').textContent = (scenario.npl.value * randomFactor()).toFixed(2) + '%';
+      
+      // Show success message
+      alert(`Stress test completed successfully for scenario: ${scenario.name}\n\nResults have been updated with the latest model parameters and market conditions.`);
+    }
+  }, 3000);
+}
+
+// Add stress testing tab initialization to the changeTab function
+// This code is for reference, as it should be added to the existing changeTab function
+/*
+if (tabName === 'stress') {
+  initializeStressTestingTab();
+}
+*/
+
+// Call the function when the page loads (for development/testing)
+// In production, this would be called when the stress tab is activated
+// document.addEventListener('DOMContentLoaded', initializeStressTestingTab);
+  </script>
+</body>
+</html>
