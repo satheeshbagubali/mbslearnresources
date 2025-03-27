@@ -289,13 +289,14 @@
     </header>
     
     <div class="nav-tabs">
-      <div class="tab" id="tab-overview" onclick="changeTab('overview')">ALM Overview</div>
-      <div class="tab" id="tab-liquidity" onclick="changeTab('liquidity')">Liquidity</div>
-      <div class="tab" id="tab-irr" onclick="changeTab('irr')">Interest Rate Risk</div>
-      <div class="tab" id="tab-balance-sheet" onclick="changeTab('balance-sheet')">Balance Sheet</div>
-      <div class="tab" id="tab-stress" onclick="changeTab('stress')">Stress Testing</div>
-    </div>
-    
+        <div class="tab" id="tab-overview" onclick="changeTab('overview')">ALM Overview</div>
+        <div class="tab" id="tab-liquidity" onclick="changeTab('liquidity')">Liquidity</div>
+        <div class="tab" id="tab-irr" onclick="changeTab('irr')">Interest Rate Risk</div>
+        <div class="tab" id="tab-balance-sheet" onclick="changeTab('balance-sheet')">Balance Sheet</div>
+        <div class="tab" id="tab-stress" onclick="changeTab('stress')">Stress Testing</div>
+        <div class="tab" id="tab-education" onclick="changeTab('education')">Education</div>
+      </div>
+
     <!-- Main content area with tab views -->
     <main class="main-content">
       <!-- Overview Tab View -->
@@ -1087,6 +1088,200 @@
   </div>
 </div>
     
+<!-- Education Tab View -->
+<div id="view-education" class="tab-view">
+    <!-- Introduction -->
+    <div class="panel grid-full">
+      <div class="panel-header">
+        <span>Introduction to Balance Sheet Management</span>
+      </div>
+      <div class="panel-content" style="overflow-y: auto;">
+        <div style="padding: 10px;">
+          <h3 style="margin-bottom: 15px; color: var(--text-highlight);">What is Balance Sheet Management?</h3>
+          <p>Balance sheet management, also known as Asset-Liability Management (ALM), is the practice of managing risks that arise due to mismatches between assets and liabilities. For banks, this is a critical function that impacts profitability, regulatory compliance, and long-term sustainability.</p>
+          
+          <h3 style="margin: 20px 0 15px; color: var(--text-highlight);">Key Components of ALM</h3>
+          <ul style="list-style-type: none; padding-left: 10px;">
+            <li style="margin-bottom: 15px;"><strong style="color: var(--accent-blue);">Interest Rate Risk Management:</strong> Monitoring and managing the impact of interest rate changes on both assets (loans, investments) and liabilities (deposits, borrowings).</li>
+            <li style="margin-bottom: 15px;"><strong style="color: var(--accent-blue);">Liquidity Risk Management:</strong> Ensuring the bank maintains sufficient liquid assets to meet obligations as they come due, even under stress scenarios.</li>
+            <li style="margin-bottom: 15px;"><strong style="color: var(--accent-blue);">Capital Management:</strong> Maintaining adequate capital to absorb unexpected losses while meeting regulatory requirements.</li>
+            <li style="margin-bottom: 15px;"><strong style="color: var(--accent-blue);">Funding Strategy:</strong> Developing a stable and diverse funding base to support asset growth and minimize concentration risk.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Key Metrics -->
+    <div class="panel grid-full">
+      <div class="panel-header">
+        <span>Key Balance Sheet Metrics Explained</span>
+      </div>
+      <div class="panel-content" style="overflow-y: auto;">
+        <div style="padding: 10px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div>
+              <h3 style="color: var(--text-highlight);">Interest Rate Risk Metrics</h3>
+              <p><strong style="color: var(--accent-blue);">Net Interest Margin (NIM):</strong> The difference between interest income and interest expense, expressed as a percentage of earning assets. Higher is generally better.</p>
+              <p><strong style="color: var(--accent-blue);">Duration Gap:</strong> Measures the difference in duration between assets and liabilities. A positive gap indicates exposure to rising rates.</p>
+              <p><strong style="color: var(--accent-blue);">Economic Value of Equity (EVE):</strong> Measures the change in the economic value of equity from interest rate shifts.</p>
+              <p><strong style="color: var(--accent-blue);">Net Interest Income (NII) Sensitivity:</strong> Measures the change in net interest income from interest rate shifts.</p>
+            </div>
+            <div>
+              <h3 style="color: var(--text-highlight);">Liquidity Risk Metrics</h3>
+              <p><strong style="color: var(--accent-blue);">Liquidity Coverage Ratio (LCR):</strong> Measures the bank's ability to survive a 30-day stress scenario. Regulatory minimum is 100%.</p>
+              <p><strong style="color: var(--accent-blue);">Net Stable Funding Ratio (NSFR):</strong> Measures funding stability over a one-year horizon. Regulatory minimum is 100%.</p>
+              <p><strong style="color: var(--accent-blue);">Loan-to-Deposit Ratio:</strong> Ratio of loans to deposits. Lower values indicate stronger liquidity positions.</p>
+              <p><strong style="color: var(--accent-blue);">Survival Horizon:</strong> Estimated period the bank can survive using only liquid assets without market access.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Common Scenarios -->
+    <div class="panel grid-full">
+      <div class="panel-header">
+        <span>Common Scenarios Impacting Balance Sheet Health</span>
+      </div>
+      <div class="panel-content" style="overflow-y: auto;">
+        <div style="padding: 10px;">
+          <div id="scenario-selector" style="margin-bottom: 20px;">
+            <select id="edu-scenario-dropdown" class="filter-dropdown" style="width: 250px;" onchange="showEducationScenario()">
+              <option value="rising-rates">Rising Interest Rate Environment</option>
+              <option value="flattening-curve">Yield Curve Flattening</option>
+              <option value="liquidity-stress">Liquidity Stress</option>
+              <option value="recession">Economic Recession</option>
+              <option value="deposit-runoff">Deposit Runoff</option>
+            </select>
+          </div>
+          
+          <div id="scenario-content">
+            <!-- Content will be updated by JavaScript -->
+            <h3 id="scenario-title" style="color: var(--text-highlight);">Rising Interest Rate Environment</h3>
+            
+            <div class="flex-row" style="margin: 15px 0; gap: 20px;">
+              <div style="flex: 1; background-color: var(--bg-tertiary); padding: 15px; border-radius: 5px;">
+                <h4 style="color: var(--accent-blue); margin-bottom: 10px;">Impact on Balance Sheet</h4>
+                <ul id="scenario-impacts" style="list-style-type: none; padding-left: 5px;">
+                  <li style="margin-bottom: 8px;">• Asset values decrease, particularly for long-duration fixed-rate assets</li>
+                  <li style="margin-bottom: 8px;">• Funding costs increase more rapidly than asset yields if duration gap is positive</li>
+                  <li style="margin-bottom: 8px;">• Net interest margin may compress in the short term</li>
+                  <li style="margin-bottom: 8px;">• Economic value of equity (EVE) typically decreases</li>
+                  <li style="margin-bottom: 8px;">• Deposit betas become crucial (how much of rate increases pass through to depositors)</li>
+                </ul>
+              </div>
+              
+              <div style="flex: 1; background-color: var(--bg-tertiary); padding: 15px; border-radius: 5px;">
+                <h4 style="color: var(--accent-green); margin-bottom: 10px;">Recommended Actions</h4>
+                <ul id="scenario-actions" style="list-style-type: none; padding-left: 5px;">
+                  <li style="margin-bottom: 8px;">• Shorten asset duration by increasing floating-rate assets</li>
+                  <li style="margin-bottom: 8px;">• Implement receive-fixed interest rate swaps</li>
+                  <li style="margin-bottom: 8px;">• Increase deposit retention efforts to manage funding costs</li>
+                  <li style="margin-bottom: 8px;">• Consider selling longer-duration fixed-rate assets</li>
+                  <li style="margin-bottom: 8px;">• Extend liability duration through term funding and longer CDs</li>
+                </ul>
+              </div>
+            </div>
+            
+            <div style="background-color: var(--bg-tertiary); padding: 15px; border-radius: 5px; margin-top: 15px;">
+              <h4 style="color: var(--accent-orange); margin-bottom: 10px;">Key Metrics to Monitor</h4>
+              <div id="scenario-metrics" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                  <p><strong>EVE Sensitivity:</strong> Watch for significant negative values</p>
+                  <p><strong>NII Sensitivity:</strong> Focus on 1-year impact</p>
+                </div>
+                <div>
+                  <p><strong>Duration Gap:</strong> Work to reduce positive gap</p>
+                  <p><strong>Deposit Betas:</strong> Monitor closely across segments</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- ALM Best Practices -->
+    <div class="panel grid-full">
+      <div class="panel-header">
+        <span>Balance Sheet Management Best Practices</span>
+      </div>
+      <div class="panel-content" style="overflow-y: auto;">
+        <div style="padding: 10px;">
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+            <div style="background-color: var(--bg-tertiary); padding: 15px; border-radius: 5px;">
+              <h3 style="color: var(--accent-blue); margin-bottom: 10px;">Strategic Planning</h3>
+              <ul style="list-style-type: none; padding-left: 5px;">
+                <li style="margin-bottom: 8px;">• Align ALM strategy with overall business objectives</li>
+                <li style="margin-bottom: 8px;">• Develop risk appetite and tolerance statements</li>
+                <li style="margin-bottom: 8px;">• Create forward-looking balance sheet projections</li>
+                <li style="margin-bottom: 8px;">• Conduct regular scenario planning exercises</li>
+              </ul>
+            </div>
+            
+            <div style="background-color: var(--bg-tertiary); padding: 15px; border-radius: 5px;">
+              <h3 style="color: var(--accent-green); margin-bottom: 10px;">Risk Measurement</h3>
+              <ul style="list-style-type: none; padding-left: 5px;">
+                <li style="margin-bottom: 8px;">• Implement robust ALM modeling capabilities</li>
+                <li style="margin-bottom: 8px;">• Use multiple methodologies for risk assessment</li>
+                <li style="margin-bottom: 8px;">• Regularly validate models and assumptions</li>
+                <li style="margin-bottom: 8px;">• Consider both earnings and economic value perspectives</li>
+              </ul>
+            </div>
+            
+            <div style="background-color: var(--bg-tertiary); padding: 15px; border-radius: 5px;">
+              <h3 style="color: var(--accent-purple); margin-bottom: 10px;">Governance</h3>
+              <ul style="list-style-type: none; padding-left: 5px;">
+                <li style="margin-bottom: 8px;">• Establish effective ALCO (Asset-Liability Committee)</li>
+                <li style="margin-bottom: 8px;">• Set clear roles and responsibilities</li>
+                <li style="margin-bottom: 8px;">• Implement comprehensive risk limits</li>
+                <li style="margin-bottom: 8px;">• Ensure regular independent review of ALM function</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Interactive Learning -->
+    <div class="panel grid-full">
+      <div class="panel-header">
+        <span>Interactive Learning: ALM Quiz</span>
+      </div>
+      <div class="panel-content" style="overflow-y: auto;">
+        <div style="padding: 20px; text-align: center;">
+          <p style="margin-bottom: 20px;">Test your knowledge of balance sheet management concepts with our interactive quiz.</p>
+          <button id="start-quiz-btn" class="filter-dropdown" style="background-color: var(--accent-blue); color: white; padding: 10px 20px; cursor: pointer;" onclick="startALMQuiz()">Start Quiz</button>
+          
+          <div id="quiz-container" style="display: none; text-align: left; margin-top: 20px;">
+            <div id="quiz-question" style="background-color: var(--bg-tertiary); padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+              <h3 id="question-text" style="color: var(--text-highlight);">Question text will appear here</h3>
+            </div>
+            
+            <div id="quiz-options" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+              <!-- Options will be inserted by JavaScript -->
+            </div>
+            
+            <div id="quiz-feedback" style="display: none; background-color: var(--bg-tertiary); padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+              <p id="feedback-text">Feedback will appear here</p>
+            </div>
+            
+            <div style="text-align: center;">
+              <button id="next-question-btn" class="filter-dropdown" style="background-color: var(--accent-blue); color: white; padding: 8px 15px; cursor: pointer; display: none;" onclick="nextQuestion()">Next Question</button>
+              <button id="finish-quiz-btn" class="filter-dropdown" style="background-color: var(--accent-green); color: white; padding: 8px 15px; cursor: pointer; display: none;" onclick="finishQuiz()">Finish Quiz</button>
+            </div>
+          </div>
+          
+          <div id="quiz-results" style="display: none; margin-top: 20px;">
+            <h3 style="color: var(--accent-green);">Quiz Results</h3>
+            <p id="quiz-score">You scored: <span id="score">0</span> out of <span id="total-questions">5</span></p>
+            <p id="quiz-feedback-final">Great job! You have a solid understanding of ALM concepts.</p>
+            <button class="filter-dropdown" style="background-color: var(--accent-blue); color: white; padding: 8px 15px; cursor: pointer; margin-top: 15px;" onclick="restartQuiz()">Restart Quiz</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
     <footer class="footer">
       <div>Retail Bank ALM Dashboard | Version 1.0</div>
       <div>Last refreshed: 2025-03-25 10:30:45 | Next refresh: 2025-03-25 16:30:00</div>
@@ -1141,6 +1336,11 @@ function initializeBalanceSheetContent() {
     
     initializeStressTestingTab();
   }
+  else if (tabName === 'education') {
+    
+    showEducationScenario();
+  }
+  
 }
     
 
@@ -3610,6 +3810,397 @@ if (tabName === 'stress') {
 // Call the function when the page loads (for development/testing)
 // In production, this would be called when the stress tab is activated
 // document.addEventListener('DOMContentLoaded', initializeStressTestingTab);
+
+// Education Tab Functionality
+
+// Scenario data for the education tab
+const educationScenarios = {
+  "rising-rates": {
+    title: "Rising Interest Rate Environment",
+    impacts: [
+      "• Asset values decrease, particularly for long-duration fixed-rate assets",
+      "• Funding costs increase more rapidly than asset yields if duration gap is positive",
+      "• Net interest margin may compress in the short term",
+      "• Economic value of equity (EVE) typically decreases",
+      "• Deposit betas become crucial (how much of rate increases pass through to depositors)"
+    ],
+    actions: [
+      "• Shorten asset duration by increasing floating-rate assets",
+      "• Implement receive-fixed interest rate swaps",
+      "• Increase deposit retention efforts to manage funding costs",
+      "• Consider selling longer-duration fixed-rate assets",
+      "• Extend liability duration through term funding and longer CDs"
+    ],
+    metrics: {
+      left: [
+        "<strong>EVE Sensitivity:</strong> Watch for significant negative values",
+        "<strong>NII Sensitivity:</strong> Focus on 1-year impact"
+      ],
+      right: [
+        "<strong>Duration Gap:</strong> Work to reduce positive gap",
+        "<strong>Deposit Betas:</strong> Monitor closely across segments"
+      ]
+    }
+  },
+  "flattening-curve": {
+    title: "Yield Curve Flattening",
+    impacts: [
+      "• Compression of net interest margins as the yield curve flattens",
+      "• Reduced profitability from maturity transformation activities",
+      "• Challenges in pricing longer-term assets competitively",
+      "• Potentially reduced income from securities portfolio",
+      "• Short-term funding costs may rise faster than long-term asset yields"
+    ],
+    actions: [
+      "• Reduce reliance on maturity transformation strategies",
+      "• Consider barbell investment strategies",
+      "• Focus on non-interest income sources",
+      "• Evaluate fee structures on shorter-term products",
+      "• Explore opportunities in non-traditional markets or products"
+    ],
+    metrics: {
+      left: [
+        "<strong>Yield Curve Slope:</strong> Monitor 2yr/10yr spread",
+        "<strong>NIM Trends:</strong> Watch for compression signals"
+      ],
+      right: [
+        "<strong>Interest Rate Risk Profile:</strong> Adjust as needed",
+        "<strong>Asset Yield vs. Funding Cost:</strong> Track spreads closely"
+      ]
+    }
+  },
+  "liquidity-stress": {
+    title: "Liquidity Stress",
+    impacts: [
+      "• Deposit outflows exceed normal expectations",
+      "• Wholesale funding markets become restricted or unavailable",
+      "• Liquid asset buffers are drawn down rapidly",
+      "• Asset liquidation may occur at unfavorable prices",
+      "• Increased reliance on contingent funding sources"
+    ],
+    actions: [
+      "• Activate contingency funding plan",
+      "• Increase deposit retention efforts with targeted pricing",
+      "• Draw on committed lines with other financial institutions",
+      "• Reduce new lending to preserve liquidity",
+      "• Consider accessing central bank liquidity facilities"
+    ],
+    metrics: {
+      left: [
+        "<strong>LCR and NSFR:</strong> Watch for deterioration",
+        "<strong>Deposit Outflow Rates:</strong> Monitor daily"
+      ],
+      right: [
+        "<strong>Survival Horizon:</strong> Update projections frequently",
+        "<strong>Unencumbered Asset Ratio:</strong> Maintain adequate buffer"
+      ]
+    }
+  },
+  "recession": {
+    title: "Economic Recession",
+    impacts: [
+      "• Deteriorating loan quality and increasing non-performing loans",
+      "• Reduced loan demand and slower balance sheet growth",
+      "• Flight to quality may increase core deposits",
+      "• Decreased interest rates typically compress margins",
+      "• Increased loan loss provisions reduce profitability"
+    ],
+    actions: [
+      "• Enhance credit monitoring and early warning systems",
+      "• Increase loan loss reserves proactively",
+      "• Focus on relationship deepening with high-quality customers",
+      "• Consider strategic repositioning of the securities portfolio",
+      "• Implement cost reduction initiatives"
+    ],
+    metrics: {
+      left: [
+        "<strong>Asset Quality Metrics:</strong> NPL ratio, charge-offs",
+        "<strong>Provision Coverage:</strong> Ensure adequacy"
+      ],
+      right: [
+        "<strong>Capital Ratios:</strong> Monitor for erosion",
+        "<strong>Stress Test Results:</strong> Review frequently"
+      ]
+    }
+  },
+  "deposit-runoff": {
+    title: "Deposit Runoff",
+    impacts: [
+      "• Reduced stable funding base requiring alternative funding",
+      "• Higher funding costs as deposits are replaced with wholesale funding",
+      "• Potential liquidity pressure if runoff is rapid",
+      "• Compression of net interest margin",
+      "• Possible constraints on asset growth"
+    ],
+    actions: [
+      "• Implement targeted deposit retention strategies",
+      "• Review and adjust deposit pricing tiers",
+      "• Enhance customer relationship management to reduce attrition",
+      "• Diversify funding sources to reduce concentration risk",
+      "• Consider securitization of suitable assets to generate liquidity"
+    ],
+    metrics: {
+      left: [
+        "<strong>Deposit Retention Rates:</strong> Track by segment",
+        "<strong>Loan-to-Deposit Ratio:</strong> Watch for concerning trends"
+      ],
+      right: [
+        "<strong>Funding Cost Analysis:</strong> Monitor spread to market",
+        "<strong>Deposit Concentration:</strong> Reduce reliance on large depositors"
+      ]
+    }
+  }
+};
+
+// Function to update the education scenario content
+function showEducationScenario() {
+  const scenarioKey = document.getElementById('edu-scenario-dropdown').value;
+  const scenario = educationScenarios[scenarioKey];
+  
+  if (!scenario) return;
+  
+  // Update title
+  document.getElementById('scenario-title').textContent = scenario.title;
+  
+  // Update impacts
+  const impactsList = document.getElementById('scenario-impacts');
+  impactsList.innerHTML = '';
+  scenario.impacts.forEach(impact => {
+    const li = document.createElement('li');
+    li.style.marginBottom = '8px';
+    li.innerHTML = impact;
+    impactsList.appendChild(li);
+  });
+  
+  // Update actions
+  const actionsList = document.getElementById('scenario-actions');
+  actionsList.innerHTML = '';
+  scenario.actions.forEach(action => {
+    const li = document.createElement('li');
+    li.style.marginBottom = '8px';
+    li.innerHTML = action;
+    actionsList.appendChild(li);
+  });
+  
+  // Update metrics
+  const metricsDiv = document.getElementById('scenario-metrics');
+  metricsDiv.innerHTML = '';
+  
+  const leftDiv = document.createElement('div');
+  scenario.metrics.left.forEach(metric => {
+    const p = document.createElement('p');
+    p.innerHTML = metric;
+    leftDiv.appendChild(p);
+  });
+  
+  const rightDiv = document.createElement('div');
+  scenario.metrics.right.forEach(metric => {
+    const p = document.createElement('p');
+    p.innerHTML = metric;
+    rightDiv.appendChild(p);
+  });
+  
+  metricsDiv.appendChild(leftDiv);
+  metricsDiv.appendChild(rightDiv);
+}
+
+// Quiz functionality
+const almQuiz = {
+  currentQuestion: 0,
+  score: 0,
+  questions: [
+    {
+      text: "What does a positive duration gap indicate for a bank?",
+      options: [
+        "Assets have shorter duration than liabilities",
+        "Assets have longer duration than liabilities",
+        "Assets and liabilities have equal duration",
+        "Duration is not related to assets and liabilities"
+      ],
+      correctAnswer: 1,
+      feedback: "A positive duration gap means assets have longer duration than liabilities, which typically leads to declining economic value when interest rates rise."
+    },
+    {
+      text: "Which of the following metrics measures a bank's ability to meet short-term cash outflows under stressed conditions?",
+      options: [
+        "Net Stable Funding Ratio (NSFR)",
+        "Net Interest Margin (NIM)",
+        "Liquidity Coverage Ratio (LCR)",
+        "Economic Value of Equity (EVE)"
+      ],
+      correctAnswer: 2,
+      feedback: "The Liquidity Coverage Ratio (LCR) measures a bank's ability to survive a 30-day stress scenario by ensuring it has sufficient high-quality liquid assets."
+    },
+    {
+      text: "In a rising interest rate environment, what typically happens to the value of fixed-rate loans on a bank's balance sheet?",
+      options: [
+        "Increases",
+        "Decreases",
+        "Remains unchanged",
+        "Is unpredictable"
+      ],
+      correctAnswer: 1,
+      feedback: "In a rising interest rate environment, the value of fixed-rate loans decreases because their fixed rates become less attractive compared to new, higher-rate loans."
+    },
+    {
+      text: "What is the primary objective of Asset-Liability Management (ALM)?",
+      options: [
+        "Maximizing short-term profits",
+        "Avoiding all interest rate risk",
+        "Managing risks from mismatches between assets and liabilities",
+        "Eliminating the need for capital"
+      ],
+      correctAnswer: 2,
+      feedback: "The primary objective of ALM is to manage risks that arise due to mismatches between assets and liabilities, particularly interest rate risk and liquidity risk."
+    },
+    {
+      text: "What does a high loan-to-deposit ratio typically indicate?",
+      options: [
+        "Strong liquidity position",
+        "Potential liquidity challenges",
+        "Lower interest rate risk",
+        "Higher capital adequacy"
+      ],
+      correctAnswer: 1,
+      feedback: "A high loan-to-deposit ratio typically indicates potential liquidity challenges as the bank has deployed more of its deposits into loans, leaving fewer liquid assets available."
+    }
+  ]
+};
+
+function startALMQuiz() {
+  // Reset quiz state
+  almQuiz.currentQuestion = 0;
+  almQuiz.score = 0;
+  
+  // Hide start button and results, show quiz container
+  document.getElementById('start-quiz-btn').style.display = 'none';
+  document.getElementById('quiz-container').style.display = 'block';
+  document.getElementById('quiz-results').style.display = 'none';
+  
+  // Load first question
+  loadQuestion();
+}
+
+function loadQuestion() {
+  const question = almQuiz.questions[almQuiz.currentQuestion];
+  
+  // Set question text
+  document.getElementById('question-text').textContent = question.text;
+  
+  // Clear previous options
+  const optionsContainer = document.getElementById('quiz-options');
+  optionsContainer.innerHTML = '';
+  
+  // Add new options
+  question.options.forEach((option, index) => {
+    const button = document.createElement('button');
+    button.className = 'filter-dropdown';
+    button.style.padding = '10px';
+    button.style.margin = '5px 0';
+    button.style.textAlign = 'left';
+    button.style.cursor = 'pointer';
+    button.style.backgroundColor = 'var(--bg-tertiary)';
+    button.style.color = 'var(--text-primary)';
+    button.style.border = '1px solid var(--border-color)';
+    button.textContent = option;
+    button.onclick = () => checkAnswer(index);
+    
+    optionsContainer.appendChild(button);
+  });
+  
+  // Hide feedback and next button
+  document.getElementById('quiz-feedback').style.display = 'none';
+  document.getElementById('next-question-btn').style.display = 'none';
+  document.getElementById('finish-quiz-btn').style.display = 'none';
+}
+
+function checkAnswer(selectedIndex) {
+  const question = almQuiz.questions[almQuiz.currentQuestion];
+  const optionButtons = document.querySelectorAll('#quiz-options button');
+  
+  // Disable all option buttons
+  optionButtons.forEach(button => {
+    button.disabled = true;
+    button.style.cursor = 'default';
+  });
+  
+  // Highlight correct and incorrect answers
+  optionButtons.forEach((button, index) => {
+    if (index === question.correctAnswer) {
+      button.style.backgroundColor = 'var(--accent-green)';
+      button.style.color = 'white';
+    } else if (index === selectedIndex) {
+      button.style.backgroundColor = 'var(--accent-red)';
+      button.style.color = 'white';
+    }
+  });
+  
+  // Show feedback
+  const feedbackDiv = document.getElementById('quiz-feedback');
+  const feedbackText = document.getElementById('feedback-text');
+  feedbackDiv.style.display = 'block';
+  
+  if (selectedIndex === question.correctAnswer) {
+    almQuiz.score++;
+    feedbackText.innerHTML = '<span style="color: var(--accent-green);">Correct!</span> ' + question.feedback;
+  } else {
+    feedbackText.innerHTML = '<span style="color: var(--accent-red);">Incorrect.</span> ' + question.feedback;
+  }
+  
+  // Show next button or finish button
+  if (almQuiz.currentQuestion < almQuiz.questions.length - 1) {
+    document.getElementById('next-question-btn').style.display = 'inline-block';
+  } else {
+    document.getElementById('finish-quiz-btn').style.display = 'inline-block';
+  }
+}
+
+function nextQuestion() {
+  almQuiz.currentQuestion++;
+  loadQuestion();
+}
+
+function finishQuiz() {
+  // Hide quiz container, show results
+  document.getElementById('quiz-container').style.display = 'none';
+  document.getElementById('quiz-results').style.display = 'block';
+  
+  // Update score
+  document.getElementById('score').textContent = almQuiz.score;
+  document.getElementById('total-questions').textContent = almQuiz.questions.length;
+  
+  // Provide feedback based on score
+  const feedbackFinal = document.getElementById('quiz-feedback-final');
+  const scorePercent = (almQuiz.score / almQuiz.questions.length) * 100;
+  
+  if (scorePercent >= 80) {
+    feedbackFinal.textContent = "Excellent! You have a strong understanding of ALM concepts.";
+    feedbackFinal.style.color = 'var(--accent-green)';
+  } else if (scorePercent >= 60) {
+    feedbackFinal.textContent = "Good job! You understand the basics of ALM, but there's room for improvement.";
+    feedbackFinal.style.color = 'var(--accent-blue)';
+  } else {
+    feedbackFinal.textContent = "Keep learning! Review the educational materials to strengthen your understanding of ALM concepts.";
+    feedbackFinal.style.color = 'var(--accent-orange)';
+  }
+}
+
+function restartQuiz() {
+  startALMQuiz();
+}
+
+// Update changeTab function to initialize Education tab if needed
+// This is already included in the main changeTab function
+/*
+function changeTab(tabName) {
+  // ... existing code ...
+  
+  if (tabName === 'education') {
+    // Initialize education scenario with default value
+    showEducationScenario();
+  }
+}
+*/
   </script>
 </body>
 </html>
