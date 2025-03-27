@@ -1074,18 +1074,18 @@
       
 <!-- Stress Testing Tab View -->
 <div id="view-stress" class="tab-view">
-    <!-- Placeholder for Stress Testing tab content -->
-    <div class="panel grid-full">
-      <div class="panel-header">
-        <span>Stress Testing Analysis</span>
-      </div>
-      <div class="panel-content">
-        <div style="display: flex; justify-content: center; align-items: center; height: 200px;">
-          <h3>Stress Testing Tab Content</h3>
-        </div>
+  <!-- Placeholder for Stress Testing tab content -->
+  <div class="panel grid-full">
+    <div class="panel-header">
+      <span>Stress Testing Analysis</span>
+    </div>
+    <div class="panel-content">
+      <div style="display: flex; justify-content: center; align-items: center; height: 200px;">
+        <h3>Stress Testing Tab Content</h3>
       </div>
     </div>
   </div>
+</div>
     
     <footer class="footer">
       <div>Retail Bank ALM Dashboard | Version 1.0</div>
@@ -1098,6 +1098,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.0.0/dist/chartjs-plugin-annotation.min.js"></script>
+
   <script>
 
     
@@ -1137,7 +1138,7 @@ function initializeBalanceSheetContent() {
     initializeBalanceSheetContent();
   }
   else if (tabName === 'stress') {
-    print('here')
+    
     initializeStressTestingTab();
   }
 }
@@ -2610,6 +2611,8 @@ function capitalizeFirstLetter(string) {
 
 // Find the stress testing tab content div and replace its content
 function initializeStressTestingTab() {
+  // Register Chart.js plugins if needed
+  registerChartPlugins();
   const stressTestView = document.getElementById('view-stress');
   
   if (!stressTestView) return;
@@ -2838,6 +2841,16 @@ function initializeStressTestingTab() {
   
   // Populate mitigating actions
   populateMitigatingActions('severe-recession');
+  
+  // Reinitialize tooltip functionality for newly added info icons
+  reinitializeTooltips();
+}
+
+// Make sure Chart.js is properly initialized with annotation plugin
+function registerChartPlugins() {
+  if (typeof Chart !== 'undefined' && typeof Chart.register === 'function' && typeof window.ChartAnnotation !== 'undefined') {
+    Chart.register(window.ChartAnnotation);
+  }
 }
 
 // Define stress test scenario data
@@ -3103,6 +3116,10 @@ function initializeStressCharts() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
       scales: {
         r: {
           angleLines: {
@@ -3133,7 +3150,19 @@ function initializeStressCharts() {
           position: 'bottom'
         },
         tooltip: {
+          enabled: true,
+          backgroundColor: 'rgba(26, 34, 53, 0.9)',
+          titleFont: {
+            size: 12
+          },
+          bodyFont: {
+            size: 12
+          },
+          padding: 10,
           callbacks: {
+            title: function(tooltipItems) {
+              return tooltipItems[0].label;
+            },
             label: function(context) {
               const label = context.dataset.label || '';
               const value = context.raw;
@@ -3173,6 +3202,10 @@ function initializeStressCharts() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
       scales: {
         x: {
           title: {
@@ -3190,6 +3223,24 @@ function initializeStressCharts() {
         }
       },
       plugins: {
+        tooltip: {
+          enabled: true,
+          backgroundColor: 'rgba(26, 34, 53, 0.9)',
+          titleFont: {
+            size: 12
+          },
+          bodyFont: {
+            size: 12
+          },
+          padding: 10,
+          callbacks: {
+            label: function(context) {
+              const label = context.dataset.label || '';
+              const value = context.raw;
+              return label + ': ' + value.toFixed(1) + '%';
+            }
+          }
+        },
         annotation: {
           annotations: {
             regulatoryMinimum: {
@@ -3231,6 +3282,10 @@ function initializeStressCharts() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
       scales: {
         x: {
           title: {
@@ -3244,6 +3299,19 @@ function initializeStressCharts() {
             text: 'NPL Ratio (%)'
           },
           beginAtZero: true
+        }
+      },
+      plugins: {
+        tooltip: {
+          enabled: true,
+          backgroundColor: 'rgba(26, 34, 53, 0.9)',
+          titleFont: {
+            size: 12
+          },
+          bodyFont: {
+            size: 12
+          },
+          padding: 10
         }
       }
     }
@@ -3263,11 +3331,24 @@ function initializeStressCharts() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      interaction: {
+        mode: 'nearest',
+        intersect: true
+      },
       plugins: {
         legend: {
           position: 'bottom'
         },
         tooltip: {
+          enabled: true,
+          backgroundColor: 'rgba(26, 34, 53, 0.9)',
+          titleFont: {
+            size: 12
+          },
+          bodyFont: {
+            size: 12
+          },
+          padding: 10,
           callbacks: {
             label: function(context) {
               const label = context.label || '';
@@ -3312,11 +3393,11 @@ function updateStressScenario() {
   document.getElementById('stress-deposit-outflow').className = 'metric-value negative';
   
   document.getElementById('stress-income-impact').textContent = scenario.incomeImpact.value > 0 ? `+${scenario.incomeImpact.value}%` : `${scenario.incomeImpact.value}%`;
-  document.getElementById('stress-income-abs').textContent = scenario.incomeImpact.absoluteImpact > 0 ? `+$${Math.abs(scenario.incomeImpact.absoluteImpact).toFixed(2)}B` : `-$${Math.abs(scenario.incomeImpact.absoluteImpact).toFixed(2)}B`;
+  document.getElementById('stress-income-abs').textContent = scenario.incomeImpact.absoluteImpact > 0 ? `+${Math.abs(scenario.incomeImpact.absoluteImpact).toFixed(2)}B` : `-${Math.abs(scenario.incomeImpact.absoluteImpact).toFixed(2)}B`;
   document.getElementById('stress-income-impact').className = scenario.incomeImpact.value >= 0 ? 'metric-value positive' : 'metric-value negative';
   
   document.getElementById('stress-mv-impact').textContent = scenario.marketValueImpact.value > 0 ? `+${scenario.marketValueImpact.value}%` : `${scenario.marketValueImpact.value}%`;
-  document.getElementById('stress-mv-abs').textContent = scenario.marketValueImpact.absoluteImpact > 0 ? `+$${Math.abs(scenario.marketValueImpact.absoluteImpact).toFixed(2)}B` : `-$${Math.abs(scenario.marketValueImpact.absoluteImpact).toFixed(2)}B`;
+  document.getElementById('stress-mv-abs').textContent = scenario.marketValueImpact.absoluteImpact > 0 ? `+${Math.abs(scenario.marketValueImpact.absoluteImpact).toFixed(2)}B` : `-${Math.abs(scenario.marketValueImpact.absoluteImpact).toFixed(2)}B`;
   document.getElementById('stress-mv-impact').className = scenario.marketValueImpact.value >= 0 ? 'metric-value positive' : 'metric-value negative';
   
   document.getElementById('stress-survival').textContent = scenario.survivalHorizon.value + ' days';
@@ -3445,6 +3526,40 @@ function populateMitigatingActions(scenarioKey) {
     item.textContent = action;
     actionsList.appendChild(item);
   });
+}
+
+// Function to reinitialize tooltips for dynamically added elements
+function reinitializeTooltips() {
+  const infoIcons = document.querySelectorAll('.info-icon');
+  const tooltip = document.getElementById('tooltip');
+  
+  if (!tooltip) return;
+  
+  infoIcons.forEach(icon => {
+    // Remove existing event listeners to prevent duplicates
+    icon.removeEventListener('mouseenter', showTooltip);
+    icon.removeEventListener('mouseleave', hideTooltip);
+    
+    // Add new event listeners
+    icon.addEventListener('mouseenter', showTooltip);
+    icon.addEventListener('mouseleave', hideTooltip);
+  });
+}
+
+// Tooltip event handlers
+function showTooltip(e) {
+  const tooltip = document.getElementById('tooltip');
+  if (!tooltip) return;
+  
+  tooltip.innerHTML = e.target.getAttribute('data-tooltip');
+  tooltip.style.display = 'block';
+  tooltip.style.left = e.pageX + 10 + 'px';
+  tooltip.style.top = e.pageY + 10 + 'px';
+}
+
+function hideTooltip() {
+  const tooltip = document.getElementById('tooltip');
+  if (tooltip) tooltip.style.display = 'none';
 }
 
 // Simulate stress test execution with loading indicator
